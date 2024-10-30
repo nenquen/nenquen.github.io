@@ -1,0 +1,77 @@
+@font-face {
+    font-family: 'BiosFont'; /* Fonta bir isim veriyoruz */
+    src: url('bios_font.ttf') format('truetype'); /* Font dosyasının yolu */
+}
+
+body {
+    background-color: #091ce1;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'BiosFont'; /* Kendi fontumuzu burada tanımlıyoruz */
+}
+
+.box-container {
+    position: relative;
+    text-align: center;
+}
+
+.box {
+    width: 800px; /* Kutu genişliği */
+    height: 800px; /* Kutu yüksekliği */
+    border: 2px solid rgb(255, 255, 255);
+    margin-top: 20px;
+    position: relative; /* İçerik için konumlandırma */
+}
+
+.username {
+    position: absolute;
+    top: 14px; /* Yazıyı kutu çizgisine bitişik hale getirir */
+    left: 20px;
+    background-color: #091ce1; /* Kutu rengiyle aynı */
+    padding: 0 5px;
+    color: white; /* Yazı rengi */
+    font-size: 14px; /* Yazı boyutu */
+    border-radius: 3px; /* Yuvarlatılmış köşeler */
+    z-index: 1; /* Diğer öğelerin üstünde görünmesi için */
+}
+
+.github {
+    position: absolute;
+    top: 15px; /* Yazıyı kutu çizgisine bitişik hale getirir */
+    left: 590px;
+    background-color: #091ce1; /* Kutu rengiyle aynı */
+    padding: 0 5px;
+    color: white; /* Yazı rengi */
+    font-size: 14px; /* Yazı boyutu */
+    border-radius: 3px; /* Yuvarlatılmış köşeler */
+    z-index: 1; /* Diğer öğelerin üstünde görünmesi için */
+    text-decoration: underline; /* Altını çizer */
+}
+
+.discord {
+    position: absolute;
+    top: 15px; /* Yazıyı kutu çizgisine bitişik hale getirir */
+    left: 690px;
+    background-color: #091ce1; /* Kutu rengiyle aynı */
+    padding: 0 5px;
+    color: white; /* Yazı rengi */
+    font-size: 14px; /* Yazı boyutu */
+    border-radius: 3px; /* Yuvarlatılmış köşeler */
+    z-index: 1; /* Diğer öğelerin üstünde görünmesi için */
+    text-decoration: underline; /* Altını çizer */
+}
+
+.welcome {
+    font-size: 42px; /* Başlık boyutu */
+    font-weight: medium; /* Kalın yazı */
+    color: rgb(255, 255, 255); /* Yazı rengi */
+    position: absolute; /* Konumlandırma */
+    top: 100px; /* Yukarıdan 50px mesafe */
+    left: 50%; /* Yatay merkezleme */
+    transform: translateX(-50%); /* Yalnızca yatayda ortalar */
+}
