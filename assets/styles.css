@@ -1,6 +1,6 @@
 @font-face {
-    font-family: 'BiosFont'; /* Fonta bir isim veriyoruz */
-    src: url('bios_font.ttf') format('truetype'); /* Font dosyasının yolu */
+    font-family: 'BiosFont';
+    src: url('bios_font.ttf') format('truetype');
 }
 
 body {
@@ -12,7 +12,7 @@ body {
     align-items: center;
     justify-content: center;
     color: white;
-    font-family: 'BiosFont'; /* Kendi fontumuzu burada tanımlıyoruz */
+    font-family: 'BiosFont';
 }
 
 .box-container {
@@ -21,57 +21,57 @@ body {
 }
 
 .box {
-    width: 800px; /* Kutu genişliği */
-    height: 800px; /* Kutu yüksekliği */
+    width: 800px;
+    height: 800px;
     border: 2px solid rgb(255, 255, 255);
     margin-top: 20px;
-    position: relative; /* İçerik için konumlandırma */
+    position: relative;
 }
 
 .username {
     position: absolute;
-    top: 14px; /* Yazıyı kutu çizgisine bitişik hale getirir */
+    top: 14px;
     left: 20px;
-    background-color: #091ce1; /* Kutu rengiyle aynı */
+    background-color: #091ce1;
     padding: 0 5px;
-    color: white; /* Yazı rengi */
-    font-size: 14px; /* Yazı boyutu */
-    border-radius: 3px; /* Yuvarlatılmış köşeler */
-    z-index: 1; /* Diğer öğelerin üstünde görünmesi için */
+    color: white;
+    font-size: 14px;
+    border-radius: 3px;
+    z-index: 1;
 }
 
 .github {
     position: absolute;
-    top: 15px; /* Yazıyı kutu çizgisine bitişik hale getirir */
+    top: 15px;
     left: 590px;
-    background-color: #091ce1; /* Kutu rengiyle aynı */
+    background-color: #091ce1;
     padding: 0 5px;
-    color: white; /* Yazı rengi */
-    font-size: 14px; /* Yazı boyutu */
-    border-radius: 3px; /* Yuvarlatılmış köşeler */
-    z-index: 1; /* Diğer öğelerin üstünde görünmesi için */
-    text-decoration: underline; /* Altını çizer */
+    color: white;
+    font-size: 14px;
+    border-radius: 3px;
+    z-index: 1;
+    text-decoration: underline;
 }
 
 .discord {
     position: absolute;
-    top: 15px; /* Yazıyı kutu çizgisine bitişik hale getirir */
+    top: 15px;
     left: 690px;
-    background-color: #091ce1; /* Kutu rengiyle aynı */
+    background-color: #091ce1;
     padding: 0 5px;
-    color: white; /* Yazı rengi */
-    font-size: 14px; /* Yazı boyutu */
-    border-radius: 3px; /* Yuvarlatılmış köşeler */
-    z-index: 1; /* Diğer öğelerin üstünde görünmesi için */
-    text-decoration: underline; /* Altını çizer */
+    color: white;
+    font-size: 14px;
+    border-radius: 3px;
+    z-index: 1;
+    text-decoration: underline;
 }
 
 .welcome {
-    font-size: 42px; /* Başlık boyutu */
-    font-weight: medium; /* Kalın yazı */
-    color: rgb(255, 255, 255); /* Yazı rengi */
-    position: absolute; /* Konumlandırma */
-    top: 100px; /* Yukarıdan 50px mesafe */
-    left: 50%; /* Yatay merkezleme */
-    transform: translateX(-50%); /* Yalnızca yatayda ortalar */
+    font-size: 42px;
+    font-weight: medium;
+    color: rgb(255, 255, 255);
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
 }
