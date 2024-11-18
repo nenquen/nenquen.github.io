@@ -1,6 +1,6 @@
 @font-face {
-    font-family: 'BiosFont';
-    src: url('bios_font.ttf') format('truetype');
+    font-family: 'JetBrainsMono';
+    src: url('JetBrainsMono-Regular.ttf');
 }
 
 body {
@@ -12,7 +12,7 @@ body {
     align-items: center;
     justify-content: center;
     color: white;
-    font-family: 'BiosFont';
+    font-family: 'JetBrainsMono';
 }
 
 .box-container {
@@ -30,24 +30,24 @@ body {
 
 .username {
     position: absolute;
-    top: 15px;
+    top: 13px;
     left: 20px;
     background-color: #111111;
     padding: 0 5px;
     color: white;
-    font-size: 10px;
+    font-size: 12px;
     border-radius: 3px;
     z-index: 1;
 }
 
 .github {
     position: absolute;
-    top: 15px;
-    left: 340px;
+    top: 13px;
+    left: 350px;
     background-color: #111111;
     padding: 0 5px;
     color: white;
-    font-size: 10px;
+    font-size: 12px;
     border-radius: 3px;
     z-index: 1;
     text-decoration: underline;
@@ -55,19 +55,19 @@ body {
 
 .discord {
     position: absolute;
-    top: 15px;
-    left: 415px;
+    top: 13px;
+    left: 420px;
     background-color: #111111;
     padding: 0 5px;
     color: white;
-    font-size: 10px;
+    font-size: 12px;
     border-radius: 3px;
     z-index: 1;
     text-decoration: underline;
 }
 
 .welcome {
-    font-size: 15px;
+    font-size: 18px;
     font-weight: medium;
     color: rgb(255, 255, 255);
     position: absolute;
@@ -77,9 +77,9 @@ body {
 }
 
 .description {
-    font-size: 10px;
+    font-size: 12px;
     color: #bbb;
-    margin-top: 100px;
+    margin-top: 90px;
     max-width: 300px;
     text-align: center;
     line-height: 1.5;
