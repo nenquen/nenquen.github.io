@@ -30,7 +30,7 @@ body {
 
 .username {
     position: absolute;
-    top: 13px;
+    top: 11.8px;
     left: 20px;
     background-color: #111111;
     padding: 0 5px;
@@ -42,7 +42,7 @@ body {
 
 .github {
     position: absolute;
-    top: 13px;
+    top: 12.8px;
     left: 350px;
     background-color: #111111;
     padding: 0 5px;
@@ -55,7 +55,7 @@ body {
 
 .discord {
     position: absolute;
-    top: 13px;
+    top: 12.8px;
     left: 420px;
     background-color: #111111;
     padding: 0 5px;
