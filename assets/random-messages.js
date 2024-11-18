@@ -21,10 +21,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (isDeleting) {
             charIndex--;
-            updateElement.textContent = currentMessage.substring(0, charIndex);
+            updateElement.innerHTML = `<span style="color: #3465A4;">~</span> <span style="color: #4E9A06;">$</span> ${currentMessage.substring(0, charIndex)}`;
         } else {
             charIndex++;
-            updateElement.textContent = currentMessage.substring(0, charIndex);
+            updateElement.innerHTML = `<span style="color: #3465A4;">~</span> <span style="color: #4E9A06;">$</span> ${currentMessage.substring(0, charIndex)}`;
         }
 
         if (!isDeleting && charIndex === currentMessage.length) {
