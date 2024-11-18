@@ -15,9 +15,22 @@ body {
     font-family: 'JetBrainsMono';
 }
 
+.upper-box-container {
+    position: relative;
+    text-align: center;
+}
+
 .box-container {
     position: relative;
     text-align: center;
+}
+
+.upper-box {
+    width: 500px;
+    height: 50px;
+    border: 1px solid rgb(255, 255, 255);
+    margin-top: 20px;
+    position: relative;
 }
 
 .box {
@@ -28,9 +41,32 @@ body {
     position: relative;
 }
 
+.upper-name {
+    position: absolute;
+    top: 12px;
+    left: 20px;
+    background-color: #111111;
+    padding: 0 5px;
+    color: white;
+    font-size: 12px;
+    border-radius: 3px;
+    z-index: 1;
+}
+
+.upper-updates {
+    font-size: 12px;
+    color: #bbb;
+    margin-top: 18px;
+    max-width: 450px;
+    text-align: left;
+    line-height: 1.5;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .username {
     position: absolute;
-    top: 11.8px;
+    top: -8px;
     left: 20px;
     background-color: #111111;
     padding: 0 5px;
@@ -42,7 +78,7 @@ body {
 
 .github {
     position: absolute;
-    top: 12.8px;
+    top: -8px;
     left: 350px;
     background-color: #111111;
     padding: 0 5px;
@@ -55,7 +91,7 @@ body {
 
 .discord {
     position: absolute;
-    top: 12.8px;
+    top: -8px;
     left: 420px;
     background-color: #111111;
     padding: 0 5px;
