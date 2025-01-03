@@ -1,10 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
     const messages = [
-        "Welcome! What's up :p",
-        "Check out our discord server!",
-        "Oreo was here :3",
+        "welcome! What's up :p",
+        "check out our discord server!",
+        "nenquen was here :3",
         "giggity giggity giggity giggity!",
-        "The source code of the site is available on my github!"
+        "the source code of the site is available on my github!"
     ];
 
     const updateElement = document.getElementById("updates");
