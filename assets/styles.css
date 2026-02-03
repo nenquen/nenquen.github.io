@@ -93,6 +93,12 @@ body {
     padding: 8px 10px;
 }
 
+#updates {
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
 .profile-section {
     min-height: 130px;
     display: flex;

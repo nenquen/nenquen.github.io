@@ -21,12 +21,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (isDeleting) {
             charIndex--;
-            updateElement.innerHTML = `<span style="color: #3465A4;">~</span> <span style="color: #4E9A06;">$</span> ${currentMessage.substring(0, charIndex)}`;
         } else {
             charIndex++;
-            updateElement.innerHTML = `<span style="color: #3465A4;">~</span> <span style="color: #4E9A06;">$</span> ${currentMessage.substring(0, charIndex)}`;
         }
 
+        let displayText = currentMessage.substring(0, charIndex);
+        const prompt = `<span style="color: #3465A4;">~</span> <span style="color: #4E9A06;">$</span> `;
+
+        // Render current state
+        updateElement.innerHTML = `${prompt}${displayText}`;
+
+        // Handle overflow with | indicator
+        if (updateElement.scrollWidth > updateElement.clientWidth) {
+            let slicedText = displayText;
+            while (updateElement.scrollWidth > updateElement.clientWidth && slicedText.length > 0) {
+                slicedText = slicedText.substring(1);
+                updateElement.innerHTML = `${prompt}<span style="color: #bbb;">| </span>${slicedText}`;
+            }
+        }
+
+        // Logic for pausing/switching
         if (!isDeleting && charIndex === currentMessage.length) {
             isDeleting = true;
             setTimeout(updateMessage, pauseTime);
