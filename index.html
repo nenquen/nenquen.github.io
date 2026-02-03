@@ -1,139 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
+﻿<!DOCTYPE html>
+<html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>nenquen | Personal Website</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <script src="https://unpkg.com/feather-icons"></script>
-    <link rel="stylesheet" href="assets/theme.css">
+    <title>nenquen's stuff</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="assets/styles.css">
 </head>
-<body class="flex flex-col items-center justify-center p-6">
-    <div class="max-w-2xl w-full" data-aos="fade-up">
-        <div class="icon-container">
-            <img src="assets/icon.png" alt="nenquen" class="custom-icon">
-        </div>
-        
-        <h1 class="text-4xl font-bold mb-6 text-center text-[#ebbcba]">nenquen</h1>
-        
-        <div class="about-section">
-            <h2 class="text-2xl font-semibold mb-4 text-[#ebbcba] pl-2">About</h2>
-            <p class="text-[#e0def4] leading-relaxed pl-2">
-                Just a website for test, I hope you like It :3
-            </p>
-        </div>
-        
-        <div class="social-links flex justify-center space-x-4">
-            <a href="https://github.com/nenquen" target="_blank" class="social-link bg-[#26233a] hover:bg-[#2a273f]">
-                <i data-feather="github" class="w-5 h-5 text-[#e0def4]"></i>
-                <span class="social-text text-[#e0def4]">GitHub</span>
-            </a>
-            <a href="#" onclick="showDiscordRules()" class="social-link bg-[#26233a] hover:bg-[#2a273f]">
-                <i data-feather="message-circle" class="w-5 h-5 text-[#e0def4]"></i>
-                <span class="social-text text-[#e0def4]">Discord</span>
-            </a>
-            <a href="https://youtube.com/@nenquen" target="_blank" class="social-link bg-[#26233a] hover:bg-[#2a273f]">
-                <i data-feather="youtube" class="w-5 h-5 text-[#e0def4]"></i>
-                <span class="social-text text-[#e0def4]">YouTube</span>
-            </a>
-        </div>
-    </div>
 
-    <div id="discordModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden backdrop-blur-sm">
-        <div class="modern-modal rounded-2xl p-8 max-w-md w-full mx-4 relative">
-            <div class="flex items-center mb-6">
-                <img src="assets/logo.png" alt="Logo" class="modal-logo">
-                <h3 class="text-2xl font-bold text-[#ebbcba]">nen4chan rules</h3>
+<body>
+    <main class="container">
+        <section class="bios-box updates-section">
+            <span class="bios-label">updates</span>
+            <div id="updates" class="bios-content">
+                <script src="assets/random-messages.js" defer></script>
             </div>
-            
-            <div class="mb-6 bg-[#1f1d2e] rounded-xl p-4 border border-[#393552]">
-                <p class="text-[#908caa] text-sm mb-4">Please read and accept the rules to join our Discord server:</p>
-                
-                <ul class="space-y-2">
-                    <li class="rule-item flex items-start">
-                        <span class="text-[#eb6f92] mr-3 mt-1 flex-shrink-0">•</span>
-                        <span class="text-[#e0def4]">Personal fights forbidden.</span>
-                    </li>
-                    <li class="rule-item flex items-start">
-                        <span class="text-[#eb6f92] mr-3 mt-1 flex-shrink-0">•</span>
-                        <span class="text-[#e0def4]">Spam is forbidden.</span>
-                    </li>
-                    <li class="rule-item flex items-start">
-                        <span class="text-[#eb6f92] mr-3 mt-1 flex-shrink-0">•</span>
-                        <span class="text-[#e0def4]">NSFW is only valid in the NSFW channel.</span>
-                    </li>
-                </ul>
+        </section>
+
+        <section class="bios-box profile-section">
+            <span class="bios-label">nenquen's place</span>
+            <nav class="bios-nav">
+                <a href="https://github.com/nenquen" target="_blank" class="bios-link">GITHUB</a>
+                <a href="https://discord.gg/DmSwsqDzCT" target="_blank" class="bios-link">DISCORD</a>
+            </nav>
+            <div class="bios-content">
+                <h1 class="profile-title">WELCOME</h1>
+                <p class="profile-desc">Hello I'm nenquen. I did this site for test, i hope u liked it <3< /p>
             </div>
-            
-            <div class="mb-6">
-                <label class="checkbox-container text-[#e0def4]">
-                    I agree to the rules
-                    <input type="checkbox" id="agreeCheckbox">
-                    <span class="checkmark"></span>
-                </label>
-            </div>
-            
-            <div class="flex space-x-3">
-                <button onclick="hideDiscordRules()" class="flex-1 px-4 py-3 rounded-xl bg-[#1f1d2e] hover:bg-[#2a273f] text-[#e0def4] border border-[#393552] transition-all duration-200 hover:border-[#ebbcba]">
-                    Cancel
-                </button>
-                <button id="joinButton" disabled class="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-[#ebbcba] to-[#e6b0b0] text-[#191724] font-medium opacity-50 cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02]">
-                    Join Server
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function showDiscordRules() {
-            document.getElementById('discordModal').classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function hideDiscordRules() {
-            document.getElementById('discordModal').classList.add('hidden');
-            document.body.style.overflow = 'auto';
-        }
-
-        document.getElementById('agreeCheckbox').addEventListener('change', function() {
-            const joinButton = document.getElementById('joinButton');
-            if(this.checked) {
-                joinButton.disabled = false;
-                joinButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                joinButton.classList.add('hover:shadow-lg');
-            } else {
-                joinButton.disabled = true;
-                joinButton.classList.add('opacity-50', 'cursor-not-allowed');
-                joinButton.classList.remove('hover:shadow-lg');
-            }
-        });
-
-        document.getElementById('joinButton').addEventListener('click', function() {
-            window.open('https://discord.gg/DmSwsqDzCT', '_blank');
-            hideDiscordRules();
-        });
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                hideDiscordRules();
-            }
-        });
-
-        document.getElementById('discordModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                hideDiscordRules();
-            }
-        });
-
-        AOS.init({
-            duration: 800,
-            easing: 'ease-in-out',
-            once: true
-        });
-        feather.replace();
-    </script>
+        </section>
+    </main>
 </body>
+
 </html>

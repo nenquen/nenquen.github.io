@@ -1,0 +1,123 @@
+@font-face {
+    font-family: 'JetBrainsMono';
+    src: url('JetBrainsMono-Regular.ttf');
+}
+
+* {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+body {
+    background-color: #111111;
+    margin: 0;
+    padding: 20px;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'JetBrainsMono', monospace;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 420px;
+}
+
+/* 
+   --- Reusable BIOS UI System ---
+   Add a new box with this structure:
+   
+   <section class="bios-box">
+       <span class="bios-label">TITLE</span>
+       <nav class="bios-nav">
+           <a class="bios-link">LINK</a>
+       </nav>
+       <div class="bios-content">Content here...</div>
+   </section>
+*/
+
+.bios-box {
+    border: 1px solid white;
+    position: relative;
+    padding: 10px;
+    background-color: #111111;
+}
+
+.bios-label {
+    position: absolute;
+    top: -10px;
+    left: 15px;
+    background-color: #111111;
+    padding: 0 5px;
+    font-size: 11px;
+    color: white;
+    z-index: 1;
+}
+
+.bios-nav {
+    position: absolute;
+    top: -10px;
+    right: 15px;
+    display: flex;
+    gap: 15px;
+    z-index: 1;
+}
+
+.bios-link {
+    background-color: #111111;
+    padding: 0 5px;
+    color: white;
+    font-size: 11px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.bios-content {
+    font-size: 11px;
+    color: #bbb;
+}
+
+/* --- Specific Section Styles --- */
+
+.updates-section {
+    min-height: 25px;
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+}
+
+.profile-section {
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.profile-title {
+    font-size: 16px;
+    margin: 0 0 8px 0;
+    font-weight: normal;
+    color: white;
+}
+
+.profile-desc {
+    line-height: 1.4;
+    margin: 0;
+    max-width: 320px;
+}
+
+/* Mobile responsive */
+@media (max-width: 540px) {
+    .container {
+        max-width: 100%;
+    }
+}
