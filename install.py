@@ -131,6 +131,30 @@ class Installer:
                 os.system("tput civis")
         return user_input
 
+    def check_pkg(self, pkg_name):
+        try:
+            res = subprocess.run(f"pacman -Si {pkg_name}", shell=True, capture_output=True, text=True)
+            return res.returncode == 0
+        except:
+            return False
+
+    def setup_cachyos(self, target=None):
+        msg = f"Injecting CachyOS optimizations into {'target' if target else 'host'}..."
+        with Spinner(msg):
+            script = """
+cd /tmp
+curl -sLO https://mirror.cachyos.org/cachyos-repo.tar.xz
+tar xvf cachyos-repo.tar.xz &>/dev/null
+cd cachyos-repo
+yes | ./cachyos-repo.sh &>/dev/null
+"""
+            if target:
+                with open(f"{target}/tmp/cachy.sh", "w") as f: f.write(script)
+                self.run(f"arch-chroot {target} bash /tmp/cachy.sh")
+            else:
+                with open("/tmp/cachy.sh", "w") as f: f.write(script)
+                self.run("bash /tmp/cachy.sh")
+
     def render(self):
         sys.stdout.write(Colors.CLEAR)
         # Main Logo
@@ -182,7 +206,7 @@ class Installer:
     def welcome(self):
         os.system("tput civis")
         self.render()
-        typewriter_print("  Initializing personal Arch deployment...", delay=0.02, color=Colors.CYAN)
+        typewriter_print("  Welcome", delay=0.02, color=Colors.CYAN)
         time.sleep(1)
 
         # Pre-flight checks
@@ -275,21 +299,35 @@ class Installer:
         self.progress_next("Hierarchy established")
 
     def install_base(self):
-        with Spinner("Syncing keys..."):
+        self.setup_cachyos()
+        
+        with Spinner("Updating system keyrings..."):
             self.run("pacman -Sy --noconfirm archlinux-keyring", check=False)
-        self.progress_next("Keyring updated")
+        self.progress_next("Keyrings modernized")
 
-        pkgs = [
-            "base", "linux", "linux-firmware", "intel-ucode", "btrfs-progs",
-            "sudo", "base-devel", "git", "go", "networkmanager", "bluez",
-            "bluez-utils", "pipewire", "pipewire-pulse", "wireplumber",
-            "nvidia", "nvidia-utils", "nvidia-settings"
+        with Spinner("Synchronizing package databases..."):
+            self.run("pacman -Sy")
+        self.progress_next("Repositories synchronized")
+
+        all_pkgs = [
+            "base", "linux-cachyos", "linux-cachyos-headers", "linux-firmware", 
+            "intel-ucode", "btrfs-progs", "sudo", "base-devel", "git", "go", 
+            "networkmanager", "bluez", "bluez-utils", "pipewire", 
+            "pipewire-pulse", "wireplumber", "nvidia", "nvidia-utils", "nvidia-settings"
         ]
         if self.bootloader == "grub":
-            pkgs.extend(["grub", "efibootmgr"])
+            all_pkgs.extend(["grub", "efibootmgr"])
 
-        print(f"  {Colors.CYAN}{Symbol.INFO} Installing system packages...{Colors.RESET}")
-        self.run(f"pacstrap /mnt {' '.join(pkgs)}")
+        valid_pkgs = []
+        with Spinner("Validating hardware drivers..."):
+            for pkg in all_pkgs:
+                if self.check_pkg(pkg):
+                    valid_pkgs.append(pkg)
+                else:
+                    self.log(f"SKIPPED: {pkg} (Not found in repos)")
+
+        print(f"  {Colors.CYAN}{Symbol.INFO} Deploying system core...{Colors.RESET}")
+        self.run(f"pacstrap /mnt {' '.join(valid_pkgs)}")
         self.progress_next("System core installed")
 
     def configure(self):
@@ -335,7 +373,7 @@ if pacman -Q nvidia-utils >/dev/null 2>&1; then OPTS="$OPTS nvidia-drm.modeset=1
 if [[ "{self.bootloader}" == "systemd-boot" ]]; then
     bootctl install
     echo -e "default arch\\ntimeout 2\\neditor no" > /boot/loader/loader.conf
-    echo -e "title Arch Linux\\nlinux /vmlinuz-linux\\ninitrd /intel-ucode.img\\ninitrd /initramfs-linux.img\\noptions $OPTS" > /boot/loader/entries/arch.conf
+    echo -e "title Arch Linux\\nlinux /vmlinuz-linux-cachyos\\ninitrd /intel-ucode.img\\ninitrd /initramfs-linux-cachyos.img\\noptions $OPTS" > /boot/loader/entries/arch.conf
 else
     if pacman -Q nvidia-utils >/dev/null 2>&1; then
         sed -i 's/^GRUB_CMDLINE_LINUX="\\(.*\\)"/GRUB_CMDLINE_LINUX="\\1 nvidia-drm.modeset=1"/' /etc/default/grub || echo 'GRUB_CMDLINE_LINUX="nvidia-drm.modeset=1"' >> /etc/default/grub
@@ -348,6 +386,7 @@ fi
         
         print(f"  {Colors.CYAN}{Symbol.INFO} Optimizing environment...{Colors.RESET}")
         self.run("arch-chroot /mnt /bin/bash /tmp/setup.sh")
+        self.setup_cachyos(target="/mnt")
         self.progress_next("Environment optimized")
 
     def finish(self):
