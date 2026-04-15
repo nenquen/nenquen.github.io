@@ -24,10 +24,10 @@ class Colors:
     CLEAR = "\033[H\033[2J"
 
 class Symbol:
-    BLOCK_FULL = "█"
-    BLOCK_DARK = "▓"
-    BLOCK_MED = "▒"
-    BLOCK_LIGHT = "░"
+    BLOCK_FULL = "#"
+    BLOCK_DARK = "*"
+    BLOCK_MED = "="
+    BLOCK_LIGHT = "-"
     SUCCESS = "[  OK  ]"
     ERROR = "[ FAIL ]"
     INFO = "[ INFO ]"
@@ -141,22 +141,25 @@ class Installer:
     def setup_cachyos(self, target=None):
         msg = f"Injecting CachyOS optimizations into {'target' if target else 'host'}..."
         with Spinner(msg):
+            # If in live host, redirect cache to physical disk to avoid 'disk full' error
+            if not target:
+                os.system("mount -o remount,size=75% / &>/dev/null")
+                os.makedirs("/mnt/var/cache/pacman/pkg", exist_ok=True)
+                self.run("mount --bind /mnt/var/cache/pacman/pkg /var/cache/pacman/pkg", check=False)
+
             script = """
 set -e
 cd /tmp
-echo "i Fetching CachyOS repository package..."
 curl -sLO https://mirror.cachyos.org/cachyos-repo.tar.xz
-tar xvf cachyos-repo.tar.xz
+tar xvf cachyos-repo.tar.xz &>/dev/null
 cd cachyos-repo
-echo "i Running official repository configuration..."
-yes | ./cachyos-repo.sh
+yes | ./cachyos-repo.sh &>/dev/null
 """
             if target:
                 with open(f"{target}/tmp/cachy.sh", "w") as f: f.write(script)
                 self.run(f"arch-chroot {target} bash /tmp/cachy.sh")
             else:
                 with open("/tmp/cachy.sh", "w") as f: f.write(script)
-                # Run without redirection to see errors if it fails
                 self.run("bash /tmp/cachy.sh")
 
     def render(self):
