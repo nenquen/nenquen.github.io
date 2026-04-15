@@ -1,0 +1,401 @@
+#!/usr/bin/env python3
+import subprocess
+import sys
+import os
+import time
+import shutil
+import getpass
+import threading
+import itertools
+import signal
+
+# --- UI Theme & Constants ---
+class Colors:
+    BLUE = "\033[34m"
+    CYAN = "\033[36m"
+    GREEN = "\033[32m"
+    YELLOW = "\033[33m"
+    RED = "\033[31m"
+    PURPLE = "\033[35m"
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
+    RESET = "\033[0m"
+    CLEAR = "\033[H\033[2J"
+
+class Symbol:
+    BLOCK_FULL = "█"
+    BLOCK_DARK = "▓"
+    BLOCK_MED = "▒"
+    BLOCK_LIGHT = "░"
+    SUCCESS = "✔"
+    ERROR = "✘"
+    INFO = "ℹ"
+    SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
+# Configuration
+LOG_FILE = "/tmp/nen-install.log"
+TOTAL_STEPS = 12
+HOSTNAME = "archlinux"
+TIMEZONE = "Europe/Istanbul"
+LOCALE = "en_US.UTF-8"
+KEYMAP = "trq"
+EFI_SIZE_MIB = 1024
+BTRFS_COMPRESS = "zstd:3"
+SWAP_SIZE = "16G"
+
+HEADER = r'''
+        ######################################################################
+        ############################+++++++++++###############################
+        ########################+++++++++++++++++++###########################
+        ######################++++++++++++++++++++++##########################
+        ####################++++++++++++++++++++++++++########################
+        ###################+++++++++++++++++++++++++++++######################
+        #################++++++++++++++++###++++++++++++++####################
+        ###############++++++++++++#########++####++##+++++###################
+        #############+++++++++++++########################++##################
+        #############+++++++++++++########################++##################
+        ############++++++++++++++#########################+##################
+        ###########+++++++++++++++############################################
+        ###########+++++++++++++++##++++######################################
+        ##########+++++++++++++++++-+++++#############+-+#####################
+        ##########+++++++++++++++++-+##+-+############+++#####################
+        ##########++++++++++++++++#++++++##############++#####################
+        #########+++++++++++++++++############################################
+        ########++++++++++++++++++############################################
+        ########++++++++++++++++++#######++++-+++++++++----+################++
+        ########++++++++++++++++++#####++-------------------+##########+++++++
+        ########++++++++++++++++++#####+++++++++++++++--+---+######+++#+######
+        ########++++++++++++++++++#####################+++--+#################
+        #######+++++++++++++++++++#######################++++#+###############
+        #######++++++++++++++++++++########################++++###############
+        #######++++++++++++++++++++######################+++++++##############
+        #######++++++++++++++++++++#####################+++++++++#############
+        #######++++++++++++++++++++#################++++#++++++++#############
+        #######++++++++++++++-+++++++###+++#########++++##+++++++#############
+        #######+++++++++++++++++++++##################++###+#+++++############
+        #######+++++++++++++++++++++#################++######++#++############
+        #######+##+++++++++++#+++++++##############++##+++###+###+############
+        ############+++++++++#+++++++############+++#+++-++###################
+        ##############++++++++++++++++++#######+++##++-----++#################
+        #############++++++++++++++++++++++####+#+++---+----++################
+        ############+++++++++++++++++++++++####+++++----------+###############
+                                                                         
+                            ▄                                                    
+        ▄▄  ▄▄ ▄▄▄▄▄ ▄▄  ▄▄ ▀ ▄▄▄▄    ▄▄▄▄ ▄▄ ▄▄  ▄▄▄▄ ▄▄▄▄▄▄ ▄▄▄  ▄▄   ▄▄  ▄▄▄▄ 
+        ███▄██ ██▄▄  ███▄██  ███▄▄   ██▀▀▀ ██ ██ ███▄▄   ██  ██▀██ ██▀▄▀██ ███▄▄ 
+        ██ ▀██ ██▄▄▄ ██ ▀██  ▄▄██▀   ▀████ ▀███▀ ▄▄██▀   ██  ▀███▀ ██   ██ ▄▄██▀ 
+                                                                         
+'''
+
+# --- Utility Functions ---
+def typewriter_print(text, delay=0.01, color=Colors.RESET):
+    for char in text:
+        sys.stdout.write(color + char + Colors.RESET)
+        sys.stdout.flush()
+        time.sleep(delay)
+    print()
+
+class Spinner:
+    def __init__(self, message="Working..."):
+        self.message = message
+        self.stop_running = threading.Event()
+        self.spin_thread = threading.Thread(target=self._animate)
+
+    def _animate(self):
+        for char in itertools.cycle(Symbol.SPINNER):
+            if self.stop_running.is_set():
+                break
+            sys.stdout.write(f"\r  {Colors.CYAN}{char}{Colors.RESET} {self.message}")
+            sys.stdout.flush()
+            time.sleep(0.1)
+        sys.stdout.write("\r" + " " * (len(self.message) + 10) + "\r")
+
+    def __enter__(self):
+        self.spin_thread.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop_running.set()
+        self.spin_thread.join()
+
+# --- Core Installer ---
+class Installer:
+    def __init__(self):
+        self.current_step = 0
+        self.ui_mode = "welcome"
+        self.bootloader = "systemd-boot"
+        self.username = ""
+        self.password = ""
+        self.disk = ""
+        self.p1 = self.p2 = self.p3 = ""
+        self.root_uuid = ""
+
+    def log(self, message):
+        with open(LOG_FILE, "a") as f:
+            f.write(f"[{time.strftime('%H:%M:%S')}] {message}\n")
+
+    def run(self, cmd, check=True, capture=False, silent=False):
+        self.log(f"EXEC: {cmd}")
+        try:
+            if capture:
+                result = subprocess.run(cmd, shell=True, check=check, text=True, capture_output=True)
+                return result.stdout.strip()
+            else:
+                with open(LOG_FILE, "a") as f:
+                    subprocess.run(cmd, shell=True, check=check, stdout=f, stderr=f)
+                return True
+        except subprocess.CalledProcessError as e:
+            self.on_error(f"Hardware/System Error: Command failed with code {e.returncode}\nCMD: {cmd}")
+            sys.exit(1)
+
+    def render(self):
+        sys.stdout.write(Colors.CLEAR)
+        # Header with subtle color gradient or glitch
+        header_lines = HEADER.split('\n')
+        for i, line in enumerate(header_lines):
+            # Gradient effect for the logo text at the bottom
+            if "██" in line:
+                print(f"{Colors.CYAN}{line}{Colors.RESET}")
+            else:
+                print(f"{Colors.BLUE}{line}{Colors.RESET}")
+
+        if self.ui_mode == "welcome":
+            print(f"\n  {Colors.BOLD}SYSTEM READY.{Colors.RESET}")
+            return
+
+        # Progress Section
+        print(f"\n  {Colors.DIM}Installation Status:{Colors.RESET}")
+        width = 40
+        percent = int(self.current_step * 100 / TOTAL_STEPS)
+        filled = int(self.current_step * width / TOTAL_STEPS)
+        empty = width - filled
+        
+        # Color transition for bar
+        if percent < 40: bar_color = Colors.BLUE
+        elif percent < 80: bar_color = Colors.CYAN
+        else: bar_color = Colors.GREEN
+
+        bar = f"{bar_color}{Symbol.BLOCK_FULL * filled}{Colors.DIM}{Symbol.BLOCK_LIGHT * empty}{Colors.RESET}"
+        print(f"  [{bar}] {Colors.BOLD}{percent}%{Colors.RESET}")
+        print(f"  {Colors.DIM}Log: {LOG_FILE}{Colors.RESET}\n")
+
+    def progress_next(self, msg=None):
+        if msg:
+            self.log(msg)
+            print(f"  {Colors.GREEN}{Symbol.SUCCESS}{Colors.RESET} {msg}")
+        self.current_step += 1
+        time.sleep(0.5)
+        self.render()
+
+    def on_error(self, err_msg):
+        self.render()
+        print(f"\n  {Colors.RED}{Colors.BOLD}{Symbol.ERROR} FATAL ERROR:{Colors.RESET}")
+        print(f"  {Colors.RED}{err_msg}{Colors.RESET}")
+        print(f"\n  {Colors.YELLOW}{Symbol.INFO} Log snippet:{Colors.RESET}")
+        if os.path.exists(LOG_FILE):
+            subprocess.run(f"tail -n 10 {LOG_FILE}", shell=True)
+        print(f"\n  {Colors.BOLD}Press Enter to exit...{Colors.RESET}")
+        input()
+
+    def welcome(self):
+        os.system("tput civis")
+        self.render()
+        typewriter_print("  Initializing personal Arch deployment...", delay=0.02, color=Colors.CYAN)
+        time.sleep(1)
+
+        # Pre-flight checks
+        if not os.path.isdir("/sys/firmware/efi/efivars"):
+            self.on_error("EFI Vars not found. Please boot in UEFI mode.")
+            sys.exit(1)
+
+        # Check internet
+        typewriter_print("  Checking uplink connection...", delay=0.01)
+        try:
+            subprocess.run("curl -fsSL --max-time 3 https://archlinux.org/", shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            print(f"  {Colors.GREEN}{Symbol.SUCCESS} Connectivity verified.{Colors.RESET}")
+        except:
+            self.on_error("Network unreachable. Required for package download.")
+            sys.exit(1)
+
+        print(f"\n  {Colors.BOLD}USER CONFIGURATION{Colors.RESET}")
+        self.username = input(f"  {Colors.CYAN}> Username:{Colors.RESET} ").strip()
+        while not self.username:
+            self.username = input(f"  {Colors.RED}! Username cannot be empty:{Colors.RESET} ").strip()
+        
+        while True:
+            self.password = getpass.getpass(f"  {Colors.CYAN}> Password:{Colors.RESET} ")
+            p2 = getpass.getpass(f"  {Colors.CYAN}> Confirm Password:{Colors.RESET} ")
+            if self.password and self.password == p2:
+                break
+            print(f"  {Colors.RED}! Match error. Try again.{Colors.RESET}")
+
+        print(f"\n  {Colors.BOLD}BOOTLOADER SELECTION{Colors.RESET}")
+        print(f"  {Colors.DIM}1) Systemd-boot (Clean, Fast){Colors.RESET}")
+        print(f"  {Colors.DIM}2) GRUB (Traditional, Feature-rich){Colors.RESET}")
+        bc = input(f"  {Colors.CYAN}> Select [1/2] (Default 1):{Colors.RESET} ").strip() or "1"
+        self.bootloader = "grub" if bc == "2" else "systemd-boot"
+
+    def detect_disk(self):
+        self.ui_mode = "progress"
+        self.render()
+        print(f"  {Colors.CYAN}{Symbol.INFO} Scanning storage topology...{Colors.RESET}")
+        
+        cmd = "lsblk -dpno NAME,TYPE,SIZE,RM | awk '$2==\"disk\" && $4==0 {print $1, $3}' | sort -h -k2 | tail -n1 | awk '{print $1}'"
+        self.disk = self.run(cmd, capture=True)
+        
+        if not self.disk:
+            self.on_error("No physical disks detected.")
+            sys.exit(1)
+
+        size_str = self.run(f"lsblk -dno SIZE {self.disk}", capture=True)
+        print(f"  {Colors.BOLD}Target Disk:{Colors.RESET} {Colors.YELLOW}{self.disk}{Colors.RESET} ({size_str})")
+        
+        # Space check
+        bytes = int(self.run(f"lsblk -bdno SIZE {self.disk} | head -n1", capture=True) or 0)
+        if bytes < 30 * 1024**3:
+            self.on_error("Insufficient storage (< 30GB).")
+            sys.exit(1)
+
+        typewriter_print(f"\n  {Colors.RED}! WARNING: ALL DATA ON {self.disk} WILL BE WIPED !{Colors.RESET}", 0.02)
+        print(f"  Proceeding in 5 seconds... (Ctrl+C to abort)")
+        time.sleep(5)
+        self.progress_next("Hardware validation complete")
+
+    def partition_and_format(self):
+        if "nvme" in self.disk or "mmcblk" in self.disk:
+            self.p1, self.p2, self.p3 = f"{self.disk}p1", f"{self.disk}p2", f"{self.disk}p3"
+        else:
+            self.p1, self.p2, self.p3 = f"{self.disk}1", f"{self.disk}2", f"{self.disk}3"
+
+        with Spinner("Formatting file structures..."):
+            self.run("umount -R /mnt", check=False)
+            self.run("swapoff -a", check=False)
+            self.run(f"sgdisk --zap-all {self.disk}")
+            self.run(f"sgdisk -o {self.disk}")
+            self.run(f"sgdisk -n 1:0:+{EFI_SIZE_MIB}M -t 1:ef00 -c 1:EFI {self.disk}")
+            self.run(f"sgdisk -n 2:0:+{SWAP_SIZE} -t 2:8200 -c 2:SWAP {self.disk}")
+            self.run(f"sgdisk -n 3:0:0 -t 3:8300 -c 3:ARCH {self.disk}")
+            self.run(f"partprobe {self.disk}", check=False)
+            time.sleep(2)
+
+            self.run(f"mkfs.fat -F32 -n EFI {self.p1}")
+            self.run(f"mkfs.btrfs -f -L ARCH {self.p3}")
+            self.run(f"mkswap -L SWAP {self.p2}")
+            self.run(f"swapon {self.p2}", check=False)
+        
+        self.progress_next("Storage mapping finalized")
+
+        with Spinner("Mounting filesystem tree..."):
+            self.run(f"mount -o noatime,compress={BTRFS_COMPRESS} {self.p3} /mnt")
+            os.makedirs("/mnt/boot", exist_ok=True)
+            self.run(f"mount -o umask=0077 {self.p1} /mnt/boot")
+        self.progress_next("Hierarchy established")
+
+    def install_base(self):
+        with Spinner("Syncing keys..."):
+            self.run("pacman -Sy --noconfirm archlinux-keyring", check=False)
+        self.progress_next("Keyring updated")
+
+        pkgs = [
+            "base", "linux", "linux-firmware", "intel-ucode", "btrfs-progs",
+            "sudo", "base-devel", "git", "go", "networkmanager", "bluez",
+            "bluez-utils", "pipewire", "pipewire-pulse", "wireplumber",
+            "nvidia", "nvidia-utils", "nvidia-settings"
+        ]
+        if self.bootloader == "grub":
+            pkgs.extend(["grub", "efibootmgr"])
+
+        print(f"  {Colors.CYAN}{Symbol.INFO} Installing system packages...{Colors.RESET}")
+        self.run(f"pacstrap /mnt {' '.join(pkgs)}")
+        self.progress_next("System core installed")
+
+    def configure(self):
+        with Spinner("Writing partition map (fstab)..."):
+            self.run("genfstab -U /mnt >> /mnt/etc/fstab")
+        self.progress_next("Configuration persistent")
+
+        self.root_uuid = self.run(f"blkid -s UUID -o value {self.p3}", capture=True)
+        shutil.copy("/etc/resolv.conf", "/mnt/etc/resolv.conf")
+
+        chroot_cmds = f"""
+ln -sf /usr/share/zoneinfo/{TIMEZONE} /etc/localtime
+hwclock --systohc
+sed -i "s/^#{LOCALE}/{LOCALE}/" /etc/locale.gen
+locale-gen
+echo "LANG={LOCALE}" > /etc/locale.conf
+echo "KEYMAP={KEYMAP}" > /etc/vconsole.conf
+echo "{HOSTNAME}" > /etc/hostname
+printf "127.0.0.1 localhost\\n::1 localhost\\n127.0.1.1 {HOSTNAME}.localdomain {HOSTNAME}\\n" > /etc/hosts
+useradd -m -G wheel -s /bin/bash "{self.username}"
+echo "{self.username}:{self.password}" | chpasswd
+echo "root:{self.password}" | chpasswd
+sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+systemctl enable NetworkManager bluetooth || true
+
+# Nvidia optimizations
+if pacman -Q nvidia-utils >/dev/null 2>&1; then
+    sed -i 's/^MODULES=(\\(.*\\))/MODULES=(\\1 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
+    sed -i 's/^MODULES=( /MODULES=(/' /etc/mkinitcpio.conf
+    mkinitcpio -P
+fi
+
+# AUR Helpers (yay)
+echo "{self.username} ALL=(ALL) NOPASSWD: /usr/bin/pacman" > /etc/sudoers.d/99-yay
+chmod 440 /etc/sudoers.d/99-yay
+runuser -u "{self.username}" -- /bin/bash -c "cd /tmp && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si --noconfirm"
+rm -f /etc/sudoers.d/99-yay
+
+# Bootloader deployment
+OPTS="root=UUID={self.root_uuid} rw"
+if pacman -Q nvidia-utils >/dev/null 2>&1; then OPTS="$OPTS nvidia-drm.modeset=1"; fi
+
+if [[ "{self.bootloader}" == "systemd-boot" ]]; then
+    bootctl install
+    echo -e "default arch\\ntimeout 2\\neditor no" > /boot/loader/loader.conf
+    echo -e "title Arch Linux\\nlinux /vmlinuz-linux\\ninitrd /intel-ucode.img\\ninitrd /initramfs-linux.img\\noptions $OPTS" > /boot/loader/entries/arch.conf
+else
+    if pacman -Q nvidia-utils >/dev/null 2>&1; then
+        sed -i 's/^GRUB_CMDLINE_LINUX="\\(.*\\)"/GRUB_CMDLINE_LINUX="\\1 nvidia-drm.modeset=1"/' /etc/default/grub || echo 'GRUB_CMDLINE_LINUX="nvidia-drm.modeset=1"' >> /etc/default/grub
+    fi
+    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+    grub-mkconfig -o /boot/grub/grub.cfg
+fi
+"""
+        with open("/mnt/tmp/setup.sh", "w") as f: f.write(chroot_cmds)
+        
+        print(f"  {Colors.CYAN}{Symbol.INFO} Optimizing environment...{Colors.RESET}")
+        self.run("arch-chroot /mnt /bin/bash /tmp/setup.sh")
+        self.progress_next("Environment optimized")
+
+    def finish(self):
+        self.current_step = TOTAL_STEPS
+        self.render()
+        typewriter_print(f"\n  {Colors.GREEN}{Colors.BOLD}DEPLOYMENT SUCCESSFUL.{Colors.RESET}", 0.05)
+        print(f"  Remove media and press Enter to reboot in 5 seconds...")
+        time.sleep(5)
+        os.system("tput cnorm")
+        print(f"\n  {Colors.CYAN}Rebooting...{Colors.RESET}")
+
+def signal_handler(sig, frame):
+    print(f"\n\n  {Colors.RED}Process interrupted. Cleaning up...{Colors.RESET}")
+    subprocess.run("umount -R /mnt 2>/dev/null", shell=True)
+    os.system("tput cnorm")
+    sys.exit(0)
+
+def main():
+    signal.signal(signal.SIGINT, signal_handler)
+    installer = Installer()
+    try:
+        installer.welcome()
+        installer.detect_disk()
+        installer.partition_and_format()
+        installer.install_base()
+        installer.configure()
+        installer.finish()
+    except Exception as e:
+        installer.on_error(str(e))
+    finally:
+        os.system("tput cnorm")
+
+if __name__ == "__main__":
+    main()
