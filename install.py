@@ -45,12 +45,11 @@ BTRFS_COMPRESS = "zstd:3"
 SWAP_SIZE = "16G"
 
 HEADER = r'''
-                                     
-   _____         _                   
-  |  _  |___ ___| |_ ___ _ _ ___ ___ 
-  |     |  _|  _|   | . | | | -_|   |
-  |__|__|_| |___|_|_|_  |___|___|_|_|
-                      |_|            
+    _____         _                   
+   |  _  |___ ___| |_ ___ _ _ ___ ___ 
+   |     |  _|  _|   | . | | | -_|   |
+   |__|__|_| |___|_|_|_  |___|___|_|_|
+                       |_|            
 '''
 
 # --- Utility Functions ---
@@ -183,7 +182,7 @@ set -e
         # Main Logo
         print(f"{Colors.LILAC}{HEADER}{Colors.RESET}")
         # Centered Sub-header
-        print(f"      {Colors.DIM}Nen's personal arch installer{Colors.RESET}\n")
+        print(f"        {Colors.DIM}Nen's personal arch installer{Colors.RESET}\n")
 
         if self.ui_mode == "welcome":
             print(f"\n  {Colors.BOLD}SYSTEM READY.{Colors.RESET}")
@@ -408,10 +407,11 @@ else
     grub-mkconfig -o /boot/grub/grub.cfg
 fi
 """
-        with open("/mnt/tmp/setup.sh", "w") as f: f.write(chroot_cmds)
+        with open("/mnt/setup_config.sh", "w") as f: f.write(chroot_cmds)
         
         print(f"  {Colors.CYAN}{Symbol.INFO} Optimizing environment...{Colors.RESET}")
-        self.run("arch-chroot /mnt /bin/bash /tmp/setup.sh")
+        self.run("arch-chroot /mnt /bin/bash /setup_config.sh")
+        self.run("rm -f /mnt/setup_config.sh", check=False)
         self.setup_cachyos(target="/mnt")
         self.progress_next("Environment optimized")
 
