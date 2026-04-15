@@ -149,14 +149,19 @@ class Installer:
 
             script = """
 set -e
-cd /tmp
+mkdir -p /mnt/tmp/cachyos-setup
+cd /mnt/tmp/cachyos-setup
+echo "i Fetching official CachyOS repository package..."
 curl -sLO https://mirror.cachyos.org/cachyos-repo.tar.xz
-tar xvf cachyos-repo.tar.xz &>/dev/null
+tar xvf cachyos-repo.tar.xz
 cd cachyos-repo
-yes | ./cachyos-repo.sh &>/dev/null
+echo "i Running official repository configuration (High Resource Step)..."
+yes | ./cachyos-repo.sh
 """
             if target:
-                with open(f"{target}/tmp/cachy.sh", "w") as f: f.write(script)
+                # Inside chroot, we use /tmp as usual since it's now on the physical disk
+                inner_script = script.replace("/mnt/tmp/cachyos-setup", "/tmp/cachyos-setup")
+                with open(f"{target}/tmp/cachy.sh", "w") as f: f.write(inner_script)
                 self.run(f"arch-chroot {target} bash /tmp/cachy.sh")
             else:
                 with open("/tmp/cachy.sh", "w") as f: f.write(script)
