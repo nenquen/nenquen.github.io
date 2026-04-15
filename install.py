@@ -142,17 +142,21 @@ class Installer:
         msg = f"Injecting CachyOS optimizations into {'target' if target else 'host'}..."
         with Spinner(msg):
             script = """
+set -e
 cd /tmp
+echo "i Fetching CachyOS repository package..."
 curl -sLO https://mirror.cachyos.org/cachyos-repo.tar.xz
-tar xvf cachyos-repo.tar.xz &>/dev/null
+tar xvf cachyos-repo.tar.xz
 cd cachyos-repo
-yes | ./cachyos-repo.sh &>/dev/null
+echo "i Running official repository configuration..."
+yes | ./cachyos-repo.sh
 """
             if target:
                 with open(f"{target}/tmp/cachy.sh", "w") as f: f.write(script)
                 self.run(f"arch-chroot {target} bash /tmp/cachy.sh")
             else:
                 with open("/tmp/cachy.sh", "w") as f: f.write(script)
+                # Run without redirection to see errors if it fails
                 self.run("bash /tmp/cachy.sh")
 
     def render(self):
