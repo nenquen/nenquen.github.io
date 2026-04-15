@@ -298,8 +298,11 @@ set -e
             self.p1, self.p2, self.p3 = f"{self.disk}1", f"{self.disk}2", f"{self.disk}3"
 
         with Spinner("Formatting file structures..."):
-            self.run("umount -R /mnt", check=False)
-            self.run("swapoff -a", check=False)
+            # Aggressive cleanup of previous mounts/binds
+            os.system("umount -l /var/cache/pacman/pkg 2>/dev/null")
+            os.system("umount -R /mnt 2>/dev/null")
+            os.system("swapoff -a 2>/dev/null")
+            
             self.run(f"sgdisk --zap-all {self.disk}")
             self.run(f"sgdisk -o {self.disk}")
             self.run(f"sgdisk -n 1:0:+{EFI_SIZE_MIB}M -t 1:ef00 -c 1:EFI {self.disk}")
