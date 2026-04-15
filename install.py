@@ -45,11 +45,11 @@ BTRFS_COMPRESS = "zstd:3"
 SWAP_SIZE = "16G"
 
 HEADER = r'''
-    _____         _                   
-   |  _  |___ ___| |_ ___ _ _ ___ ___ 
-   |     |  _|  _|   | . | | | -_|   |
-   |__|__|_| |___|_|_|_  |___|___|_|_|
-                       |_|            
+ _____         _                   
+|  _  |___ ___| |_ ___ _ _ ___ ___ 
+|     |  _|  _|   | . | | | -_|   |
+|__|__|_| |___|_|_|_  |___|___|_|_|
+                    |_|            
 '''
 
 # --- Utility Functions ---
@@ -179,8 +179,10 @@ set -e
 
     def render(self):
         sys.stdout.write(Colors.CLEAR)
-        # Main Logo
-        print(f"{Colors.LILAC}{HEADER}{Colors.RESET}")
+        # Main Logo (Offset to center)
+        for line in HEADER.strip("\n").split("\n"):
+            print(f"     {Colors.LILAC}{line}{Colors.RESET}")
+        
         # Centered Sub-header
         print(f"        {Colors.DIM}Nen's personal arch installer{Colors.RESET}\n")
 
