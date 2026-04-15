@@ -321,7 +321,7 @@ set -e
         self.progress_next("Storage mapping finalized")
 
         with Spinner("Mounting filesystem tree..."):
-            self.run(f"mount -o noatime,compress={BTRFS_COMPRESS} {self.p3} /mnt")
+            self.run(f"mount -o noatime,compress={BTRFS_COMPRESS},space_cache=v2 {self.p3} /mnt")
             os.makedirs("/mnt/boot", exist_ok=True)
             self.run(f"mount -o umask=0077 {self.p1} /mnt/boot")
         self.progress_next("Hierarchy established")
@@ -341,7 +341,8 @@ set -e
             "base", "linux-cachyos", "linux-cachyos-headers", "linux-firmware", 
             "intel-ucode", "btrfs-progs", "sudo", "base-devel", "git", "go", 
             "networkmanager", "bluez", "bluez-utils", "pipewire", 
-            "pipewire-pulse", "wireplumber", "nvidia", "nvidia-utils", "nvidia-settings"
+            "pipewire-pulse", "wireplumber", "nvidia", "nvidia-utils", "nvidia-settings", "ly",
+            "plasma-desktop", "kitty", "dolphin"
         ]
         if self.bootloader == "grub":
             all_pkgs.extend(["grub", "efibootmgr"])
@@ -380,6 +381,8 @@ echo "{self.username}:{self.password}" | chpasswd
 echo "root:{self.password}" | chpasswd
 sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 systemctl enable NetworkManager bluetooth || true
+systemctl disable getty@tty2.service || true
+systemctl enable ly@tty2.service || true
 
 # Nvidia optimizations
 if pacman -Q nvidia-utils >/dev/null 2>&1; then
@@ -422,10 +425,16 @@ fi
         self.current_step = TOTAL_STEPS
         self.render()
         typewriter_print(f"\n  {Colors.GREEN}{Colors.BOLD}DEPLOYMENT SUCCESSFUL.{Colors.RESET}", 0.05)
-        print(f"  Remove media and press Enter to reboot in 5 seconds...")
-        time.sleep(5)
+        
+        print(f"  {Colors.YELLOW}!{Colors.RESET} Remove installation media now.")
+        for i in range(5, 0, -1):
+            sys.stdout.write(f"\r  {Colors.CYAN}{Symbol.INFO}{Colors.RESET} Rebooting in {i} seconds... ")
+            sys.stdout.flush()
+            time.sleep(1)
+        
         os.system("tput cnorm")
-        print(f"\n  {Colors.CYAN}Rebooting...{Colors.RESET}")
+        print(f"\n  {Colors.GREEN}Rebooting...{Colors.RESET}")
+        os.system("reboot")
 
 def signal_handler(sig, frame):
     print(f"\n\n  {Colors.RED}Process interrupted. Cleaning up...{Colors.RESET}")
