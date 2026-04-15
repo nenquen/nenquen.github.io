@@ -169,10 +169,11 @@ fi
 set -e
 """
             if target:
-                # Inside chroot, we use /tmp as usual since it's now on the physical disk
+                # Inside chroot, move script to root to ensure accessibility
                 inner_script = script.replace("/mnt/tmp/cachyos-setup", "/tmp/cachyos-setup")
-                with open(f"{target}/tmp/cachy.sh", "w") as f: f.write(inner_script)
-                self.run(f"arch-chroot {target} bash /tmp/cachy.sh")
+                with open(f"{target}/cachy_setup.sh", "w") as f: f.write(inner_script)
+                self.run(f"arch-chroot {target} bash /cachy_setup.sh")
+                self.run(f"rm -f {target}/cachy_setup.sh", check=False)
             else:
                 with open("/tmp/cachy.sh", "w") as f: f.write(script)
                 self.run("bash /tmp/cachy.sh")
