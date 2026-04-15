@@ -55,11 +55,12 @@ HEADER = r'''
 
 # --- Utility Functions ---
 def typewriter_print(text, delay=0.01, color=Colors.RESET):
+    sys.stdout.write(color)
     for char in text:
-        sys.stdout.write(color + char + Colors.RESET)
+        sys.stdout.write(char)
         sys.stdout.flush()
         time.sleep(delay)
-    print()
+    sys.stdout.write(Colors.RESET + "\n")
 
 class Spinner:
     def __init__(self, message="Working..."):
@@ -156,7 +157,17 @@ curl -sLO https://mirror.cachyos.org/cachyos-repo.tar.xz
 tar xvf cachyos-repo.tar.xz
 cd cachyos-repo
 echo "i Running official repository configuration (High Resource Step)..."
+# Disable 'set -e' temporarily to allow mirror-rating even if initial sync is shaky
+set +e
 yes | ./cachyos-repo.sh
+echo "i Optimizing mirrors for maximum performance..."
+if command -v cachyos-rate-mirrors &>/dev/null; then
+    cachyos-rate-mirrors
+else
+    # Fallback to forced full database refresh
+    pacman -Syy
+fi
+set -e
 """
             if target:
                 # Inside chroot, we use /tmp as usual since it's now on the physical disk
@@ -275,7 +286,7 @@ yes | ./cachyos-repo.sh
             self.on_error("Insufficient storage (< 30GB).")
             sys.exit(1)
 
-        typewriter_print(f"\n  {Colors.RED}! WARNING: ALL DATA ON {self.disk} WILL BE WIPED !{Colors.RESET}", 0.02)
+        typewriter_print(f"\n  ! WARNING: ALL DATA ON {self.disk} WILL BE WIPED !", 0.02, color=Colors.RED)
         print(f"  Proceeding in 5 seconds... (Ctrl+C to abort)")
         time.sleep(5)
         self.progress_next("Hardware validation complete")
