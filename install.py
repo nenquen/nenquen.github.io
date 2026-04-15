@@ -17,7 +17,7 @@ class Colors:
     YELLOW = "\033[33m"
     RED = "\033[31m"
     PURPLE = "\033[35m"
-    LILAC = "\033[38;5;147m"
+    LILAC = "\033[95m"
     BOLD = "\033[1m"
     DIM = "\033[2m"
     RESET = "\033[0m"
@@ -135,8 +135,8 @@ class Installer:
         sys.stdout.write(Colors.CLEAR)
         # Main Logo
         print(f"{Colors.LILAC}{HEADER}{Colors.RESET}")
-        # Sub-header
-        print(f"  {Colors.DIM}Nen's personal arch installer{Colors.RESET}\n")
+        # Centered Sub-header
+        print(f"      {Colors.DIM}Nen's personal arch installer{Colors.RESET}\n")
 
         if self.ui_mode == "welcome":
             print(f"\n  {Colors.BOLD}SYSTEM READY.{Colors.RESET}")
