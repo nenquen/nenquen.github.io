@@ -148,6 +148,23 @@ class Installer:
             self.on_error(f"Hardware/System Error: Command failed with code {e.returncode}\nCMD: {cmd}")
             sys.exit(1)
 
+    def safe_input(self, prompt=""):
+        os.system("tput cnorm")
+        try:
+            user_input = input(prompt)
+        except EOFError:
+            try:
+                with open("/dev/tty", "r") as tty:
+                    sys.stdout.write(prompt)
+                    sys.stdout.flush()
+                    user_input = tty.readline().strip()
+            except Exception:
+                user_input = ""
+        finally:
+            if self.ui_mode != "welcome":
+                os.system("tput civis")
+        return user_input
+
     def render(self):
         sys.stdout.write(Colors.CLEAR)
         # Header with subtle color gradient or glitch
@@ -195,7 +212,10 @@ class Installer:
         if os.path.exists(LOG_FILE):
             subprocess.run(f"tail -n 10 {LOG_FILE}", shell=True)
         print(f"\n  {Colors.BOLD}Press Enter to exit...{Colors.RESET}")
-        input()
+        try:
+            self.safe_input()
+        except:
+            pass
 
     def welcome(self):
         os.system("tput civis")
@@ -218,11 +238,12 @@ class Installer:
             sys.exit(1)
 
         print(f"\n  {Colors.BOLD}USER CONFIGURATION{Colors.RESET}")
-        self.username = input(f"  {Colors.CYAN}> Username:{Colors.RESET} ").strip()
+        self.username = self.safe_input(f"  {Colors.CYAN}> Username:{Colors.RESET} ").strip()
         while not self.username:
-            self.username = input(f"  {Colors.RED}! Username cannot be empty:{Colors.RESET} ").strip()
+            self.username = self.safe_input(f"  {Colors.RED}! Username cannot be empty:{Colors.RESET} ").strip()
         
         while True:
+            os.system("tput cnorm")
             self.password = getpass.getpass(f"  {Colors.CYAN}> Password:{Colors.RESET} ")
             p2 = getpass.getpass(f"  {Colors.CYAN}> Confirm Password:{Colors.RESET} ")
             if self.password and self.password == p2:
@@ -232,7 +253,7 @@ class Installer:
         print(f"\n  {Colors.BOLD}BOOTLOADER SELECTION{Colors.RESET}")
         print(f"  {Colors.DIM}1) Systemd-boot (Clean, Fast){Colors.RESET}")
         print(f"  {Colors.DIM}2) GRUB (Traditional, Feature-rich){Colors.RESET}")
-        bc = input(f"  {Colors.CYAN}> Select [1/2] (Default 1):{Colors.RESET} ").strip() or "1"
+        bc = self.safe_input(f"  {Colors.CYAN}> Select [1/2] (Default 1):{Colors.RESET} ").strip() or "1"
         self.bootloader = "grub" if bc == "2" else "systemd-boot"
 
     def detect_disk(self):

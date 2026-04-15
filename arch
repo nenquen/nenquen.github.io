@@ -1,7 +1,9 @@
 #!/bin/bash
-# nenquen's Arch Installer Loader (Fixed for TTY)
-# This script downloads the actual Python installer and ensures 
-# stdin is connected to the terminal for interactive inputs.
-
+cd /tmp
 curl -sL https://nenquen.github.io/install.py > /tmp/install.py
-python3 /tmp/install.py < /dev/tty
+
+if [ -t 0 ]; then
+    python3 /tmp/install.py
+else
+    python3 /tmp/install.py < /dev/tty
+fi
