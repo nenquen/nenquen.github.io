@@ -191,12 +191,12 @@ class Installer:
             sys.exit(1)
 
         # Check internet
-        typewriter_print("  Checking uplink connection...", delay=0.01)
+        typewriter_print("  Checking internet connection...", delay=0.01)
         try:
             subprocess.run("curl -fsSL --max-time 3 https://archlinux.org/", shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            print(f"  {Colors.GREEN}{Symbol.SUCCESS} Connectivity verified.{Colors.RESET}")
+            print(f"  {Colors.GREEN}{Symbol.SUCCESS} Internet available.{Colors.RESET}")
         except:
-            self.on_error("Network unreachable. Required for package download.")
+            self.on_error("No network detected. Internet is required.")
             sys.exit(1)
 
         print(f"\n  {Colors.BOLD}USER CONFIGURATION{Colors.RESET}")
