@@ -17,6 +17,7 @@ class Colors:
     YELLOW = "\033[33m"
     RED = "\033[31m"
     PURPLE = "\033[35m"
+    LILAC = "\033[38;5;147m"
     BOLD = "\033[1m"
     DIM = "\033[2m"
     RESET = "\033[0m"
@@ -27,9 +28,9 @@ class Symbol:
     BLOCK_DARK = "▓"
     BLOCK_MED = "▒"
     BLOCK_LIGHT = "░"
-    SUCCESS = "[  OK   ]"
-    ERROR = "[ FATAL ]"
-    INFO = "[ INFO  ]"
+    SUCCESS = "[  OK  ]"
+    ERROR = "[ FAIL ]"
+    INFO = "[ INFO ]"
     SPINNER = ["/", "-", "\\", "|"]
 
 # Configuration
@@ -44,12 +45,12 @@ BTRFS_COMPRESS = "zstd:3"
 SWAP_SIZE = "16G"
 
 HEADER = r'''
-                                   
- _____         _                   
-|  _  |___ ___| |_ ___ _ _ ___ ___ 
-|     |  _|  _|   | . | | | -_|   |
-|__|__|_| |___|_|_|_  |___|___|_|_|
-                    |_|            
+                                     
+   _____         _                   
+  |  _  |___ ___| |_ ___ _ _ ___ ___ 
+  |     |  _|  _|   | . | | | -_|   |
+  |__|__|_| |___|_|_|_  |___|___|_|_|
+                      |_|            
 '''
 
 # --- Utility Functions ---
@@ -133,7 +134,7 @@ class Installer:
     def render(self):
         sys.stdout.write(Colors.CLEAR)
         # Main Logo
-        print(f"{Colors.CYAN}{HEADER}{Colors.RESET}")
+        print(f"{Colors.LILAC}{HEADER}{Colors.RESET}")
         # Sub-header
         print(f"  {Colors.DIM}Nen's personal arch installer{Colors.RESET}\n")
 
