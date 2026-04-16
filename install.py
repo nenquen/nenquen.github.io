@@ -382,6 +382,7 @@ echo "root:{self.password}" | chpasswd
 sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 systemctl enable NetworkManager bluetooth || true
 systemctl disable getty@tty2.service || true
+systemctl enable ly.service || true
 systemctl enable ly@tty2.service || true
 
 # Nvidia optimizations
@@ -404,7 +405,12 @@ if pacman -Q nvidia-utils >/dev/null 2>&1; then OPTS="$OPTS nvidia-drm.modeset=1
 if [[ "{self.bootloader}" == "systemd-boot" ]]; then
     bootctl install
     echo -e "default arch\\ntimeout 2\\neditor no" > /boot/loader/loader.conf
-    echo -e "title Arch Linux\\nlinux /vmlinuz-linux-cachyos\\ninitrd /intel-ucode.img\\ninitrd /initramfs-linux-cachyos.img\\noptions $OPTS" > /boot/loader/entries/arch.conf
+    
+    UCODE=""
+    if [ -f /boot/intel-ucode.img ]; then UCODE="\\ninitrd /intel-ucode.img"; fi
+    if [ -f /boot/amd-ucode.img ]; then UCODE="\\ninitrd /amd-ucode.img"; fi
+    
+    echo -e "title Arch Linux\\nlinux /vmlinuz-linux-cachyos$UCODE\\ninitrd /initramfs-linux-cachyos.img\\noptions $OPTS" > /boot/loader/entries/arch.conf
 else
     if pacman -Q nvidia-utils >/dev/null 2>&1; then
         sed -i 's/^GRUB_CMDLINE_LINUX="\\(.*\\)"/GRUB_CMDLINE_LINUX="\\1 nvidia-drm.modeset=1"/' /etc/default/grub || echo 'GRUB_CMDLINE_LINUX="nvidia-drm.modeset=1"' >> /etc/default/grub
