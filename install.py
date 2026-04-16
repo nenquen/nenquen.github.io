@@ -432,7 +432,40 @@ fi
         self.render()
         typewriter_print(f"\n  {Colors.GREEN}{Colors.BOLD}DEPLOYMENT SUCCESSFUL.{Colors.RESET}", 0.05)
         
-        print(f"  {Colors.YELLOW}!{Colors.RESET} Remove installation media now.")
+        # --- Cleanup Section ---
+        print(f"\n  {Colors.BOLD}CLEANUP{Colors.RESET}")
+        ans = self.safe_input(f"  {Colors.CYAN}?{Colors.RESET} Delete log file ({LOG_FILE})? [Y/n]: ").strip().lower()
+        delete_logs = (ans != 'n')
+
+        with Spinner("Cleaning up temporary files and unmounting..."):
+            # Unmount everything safely
+            os.system("umount -l /var/cache/pacman/pkg 2>/dev/null")
+            os.system("umount -R /mnt 2>/dev/null")
+            
+            # Remove temporary waste files
+            waste_files = ["/tmp/cachy.sh", "/tmp/cachy_setup.sh", "/tmp/setup_config.sh"]
+            for f in waste_files:
+                if os.path.exists(f):
+                    try: os.remove(f)
+                    except: pass
+            
+            if os.path.exists("/tmp/cachyos-setup"):
+                shutil.rmtree("/tmp/cachyos-setup", ignore_errors=True)
+
+            # Optional log deletion
+            if delete_logs and os.path.exists(LOG_FILE):
+                try: os.remove(LOG_FILE)
+                except: pass
+
+            # Self-destruct (Remove the installer script itself)
+            try:
+                os.remove(sys.argv[0])
+            except:
+                pass
+
+        print(f"  {Colors.GREEN}{Symbol.SUCCESS}{Colors.RESET} Cleanup complete. System is lean.")
+        
+        print(f"\n  {Colors.YELLOW}!{Colors.RESET} Remove installation media now.")
         for i in range(5, 0, -1):
             sys.stdout.write(f"\r  {Colors.CYAN}{Symbol.INFO}{Colors.RESET} Rebooting in {i} seconds... ")
             sys.stdout.flush()
