@@ -262,8 +262,8 @@ set -e
             print(f"  {Colors.RED}! Match error. Try again.{Colors.RESET}")
 
         print(f"\n  {Colors.BOLD}BOOTLOADER SELECTION{Colors.RESET}")
-        print(f"  {Colors.DIM}1) Systemd-boot (Clean, Fast){Colors.RESET}")
-        print(f"  {Colors.DIM}2) GRUB (Traditional, Feature-rich){Colors.RESET}")
+        print(f"  {Colors.DIM}1) Systemd-boot{Colors.RESET}")
+        print(f"  {Colors.DIM}2) GRUB{Colors.RESET}")
         bc = self.safe_input(f"  {Colors.CYAN}> Select [1/2] (Default 1):{Colors.RESET} ").strip() or "1"
         self.bootloader = "grub" if bc == "2" else "systemd-boot"
 
