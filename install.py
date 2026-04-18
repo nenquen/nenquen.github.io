@@ -341,7 +341,7 @@ set -e
             "base", "linux-cachyos", "linux-cachyos-headers", "linux-firmware", 
             "intel-ucode", "btrfs-progs", "sudo", "base-devel", "git", "go", 
             "networkmanager", "bluez", "bluez-utils", "pipewire", 
-            "pipewire-pulse", "wireplumber", "nvidia", "nvidia-utils", "nvidia-settings", "ly",
+            "pipewire-pulse", "wireplumber", "ly",
             "plasma-desktop", "kitty", "dolphin"
         ]
         if self.bootloader == "grub":
@@ -385,6 +385,9 @@ systemctl disable getty@tty2.service || true
 systemctl enable ly.service || true
 systemctl enable ly@tty2.service || true
 
+# Driver installation (Delayed for kernel compatibility)
+pacman -Sy --noconfirm nvidia nvidia-utils nvidia-settings nvidia-prime
+
 # Nvidia optimizations
 if pacman -Q nvidia-utils >/dev/null 2>&1; then
     sed -i 's/^MODULES=(\\(.*\\))/MODULES=(\\1 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
@@ -408,7 +411,6 @@ if [[ "{self.bootloader}" == "systemd-boot" ]]; then
     
     UCODE=""
     if [ -f /boot/intel-ucode.img ]; then UCODE="\\ninitrd /intel-ucode.img"; fi
-    if [ -f /boot/amd-ucode.img ]; then UCODE="\\ninitrd /amd-ucode.img"; fi
     
     echo -e "title Arch Linux\\nlinux /vmlinuz-linux-cachyos$UCODE\\ninitrd /initramfs-linux-cachyos.img\\noptions $OPTS" > /boot/loader/entries/arch.conf
 else
@@ -422,9 +424,9 @@ fi
         with open("/mnt/setup_config.sh", "w") as f: f.write(chroot_cmds)
         
         print(f"  {Colors.CYAN}{Symbol.INFO} Optimizing environment...{Colors.RESET}")
+        self.setup_cachyos(target="/mnt")
         self.run("arch-chroot /mnt /bin/bash /setup_config.sh")
         self.run("rm -f /mnt/setup_config.sh", check=False)
-        self.setup_cachyos(target="/mnt")
         self.progress_next("Environment optimized")
 
     def finish(self):
