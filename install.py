@@ -347,7 +347,7 @@ set -e
             "noto-fonts", "noto-fonts-emoji", "ttf-jetbrains-mono-nerd",
             "ark", "unzip", "unrar", "gwenview", "kate",
             "plasma-systemmonitor", "xorg-xwayland", "breeze-gtk",
-            "sof-firmware", "alsa-ucm-conf"
+            "sof-firmware", "alsa-ucm-conf", "bash-completion"
         ]
         if self.bootloader == "grub":
             all_pkgs.extend(["grub", "efibootmgr"])
@@ -400,25 +400,29 @@ Section "InputClass"
 EndSection
 EOF
 
-# Driver installation (Delayed for kernel compatibility)
-pacman -S --noconfirm nvidia-dkms nvidia-utils nvidia-settings nvidia-prime
-
-# Nvidia optimizations
-if pacman -Q nvidia-utils >/dev/null 2>&1; then
-    sed -i 's/^MODULES=(\\(.*\\))/MODULES=(\\1 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
-    sed -i 's/^MODULES=( /MODULES=(/' /etc/mkinitcpio.conf
-    mkinitcpio -P
-fi
-
 # AUR Helpers (yay)
 echo "{self.username} ALL=(ALL) NOPASSWD: /usr/bin/pacman" > /etc/sudoers.d/99-yay
 chmod 440 /etc/sudoers.d/99-yay
 runuser -u "{self.username}" -- /bin/bash -c "cd /tmp && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si --noconfirm"
 rm -f /etc/sudoers.d/99-yay
 
+# KDE Default Terminal & Shortcuts (Kitty)
+mkdir -p /home/{self.username}/.config
+cat << 'EOF' > /home/{self.username}/.config/kdeglobals
+[General]
+TerminalApplication=kitty
+TerminalService=kitty.desktop
+EOF
+
+cat << 'EOF' > /home/{self.username}/.config/kglobalshortcutsrc
+[kitty.desktop]
+_k_friendly_name=kitty
+_launch=Ctrl+Alt+T,none,kitty
+EOF
+chown -R {self.username}:{self.username} /home/{self.username}/.config
+
 # Bootloader deployment
 OPTS="root=UUID={self.root_uuid} rw"
-if pacman -Q nvidia-utils >/dev/null 2>&1; then OPTS="$OPTS nvidia-drm.modeset=1"; fi
 
 if [[ "{self.bootloader}" == "systemd-boot" ]]; then
     bootctl install
@@ -429,9 +433,6 @@ if [[ "{self.bootloader}" == "systemd-boot" ]]; then
     
     echo -e "title Arch Linux\\nlinux /vmlinuz-linux-cachyos$UCODE\\ninitrd /initramfs-linux-cachyos.img\\noptions $OPTS" > /boot/loader/entries/arch.conf
 else
-    if pacman -Q nvidia-utils >/dev/null 2>&1; then
-        sed -i 's/^GRUB_CMDLINE_LINUX="\\(.*\\)"/GRUB_CMDLINE_LINUX="\\1 nvidia-drm.modeset=1"/' /etc/default/grub || echo 'GRUB_CMDLINE_LINUX="nvidia-drm.modeset=1"' >> /etc/default/grub
-    fi
     grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
     grub-mkconfig -o /boot/grub/grub.cfg
 fi
