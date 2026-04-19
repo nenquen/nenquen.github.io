@@ -342,7 +342,11 @@ set -e
             "intel-ucode", "btrfs-progs", "sudo", "base-devel", "git", "go", 
             "networkmanager", "bluez", "bluez-utils", "pipewire", 
             "pipewire-pulse", "wireplumber", "ly",
-            "plasma-desktop", "kitty", "dolphin"
+            "plasma-desktop", "plasma-nm", "powerdevil", "kinfocenter",
+            "spectacle", "bluedevil", "plasma-pa", "kitty", "dolphin",
+            "noto-fonts", "noto-fonts-emoji", "ttf-jetbrains-mono-nerd",
+            "ark", "unzip", "unrar", "gwenview", "kate",
+            "plasma-systemmonitor", "xorg-xwayland", "breeze-gtk"
         ]
         if self.bootloader == "grub":
             all_pkgs.extend(["grub", "efibootmgr"])
@@ -386,7 +390,7 @@ systemctl enable ly.service || true
 systemctl enable ly@tty2.service || true
 
 # Driver installation (Delayed for kernel compatibility)
-pacman -Sy --noconfirm nvidia nvidia-utils nvidia-settings nvidia-prime
+pacman -Sy --noconfirm nvidia-dkms nvidia-utils nvidia-settings nvidia-prime
 
 # Nvidia optimizations
 if pacman -Q nvidia-utils >/dev/null 2>&1; then
