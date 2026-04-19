@@ -346,7 +346,8 @@ set -e
             "spectacle", "bluedevil", "plasma-pa", "kitty", "dolphin",
             "noto-fonts", "noto-fonts-emoji", "ttf-jetbrains-mono-nerd",
             "ark", "unzip", "unrar", "gwenview", "kate",
-            "plasma-systemmonitor", "xorg-xwayland", "breeze-gtk"
+            "plasma-systemmonitor", "xorg-xwayland", "breeze-gtk",
+            "sof-firmware", "alsa-ucm-conf"
         ]
         if self.bootloader == "grub":
             all_pkgs.extend(["grub", "efibootmgr"])
@@ -389,8 +390,18 @@ systemctl disable getty@tty2.service || true
 systemctl enable ly.service || true
 systemctl enable ly@tty2.service || true
 
+# X11/Wayland Turkish Keyboard Layout
+mkdir -p /etc/X11/xorg.conf.d
+cat << 'EOF' > /etc/X11/xorg.conf.d/00-keyboard.conf
+Section "InputClass"
+        Identifier "system-keyboard"
+        MatchIsKeyboard "on"
+        Option "XkbLayout" "tr"
+EndSection
+EOF
+
 # Driver installation (Delayed for kernel compatibility)
-pacman -Sy --noconfirm nvidia-dkms nvidia-utils nvidia-settings nvidia-prime
+pacman -S --noconfirm nvidia-dkms nvidia-utils nvidia-settings nvidia-prime
 
 # Nvidia optimizations
 if pacman -Q nvidia-utils >/dev/null 2>&1; then
