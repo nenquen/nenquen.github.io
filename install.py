@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+Nen's Arch Linux Installer — Optimized Edition
+CachyOS kernel · KDE Plasma · NVIDIA-aware · Dual-boot support
+"""
+
 import subprocess
 import sys
 import os
@@ -8,511 +13,1181 @@ import getpass
 import threading
 import itertools
 import signal
+import logging
+import re
+import tempfile
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Optional
 
-# --- UI Theme & Constants ---
-class Colors:
-    BLUE = "\033[34m"
-    CYAN = "\033[36m"
-    GREEN = "\033[32m"
+# ─── UI Theme ──────────────────────────────────────────────────────────────────
+
+class C:
+    BLUE   = "\033[34m"
+    CYAN   = "\033[36m"
+    GREEN  = "\033[32m"
     YELLOW = "\033[33m"
-    RED = "\033[31m"
-    PURPLE = "\033[35m"
-    LILAC = "\033[95m"
-    BOLD = "\033[1m"
-    DIM = "\033[2m"
-    RESET = "\033[0m"
-    CLEAR = "\033[H\033[2J"
+    RED    = "\033[31m"
+    LILAC  = "\033[95m"
+    BOLD   = "\033[1m"
+    DIM    = "\033[2m"
+    RESET  = "\033[0m"
+    CLEAR  = "\033[H\033[2J"
 
-class Symbol:
-    BLOCK_FULL = "#"
-    BLOCK_DARK = "*"
-    BLOCK_MED = "="
-    BLOCK_LIGHT = "-"
-    SUCCESS = "[  OK  ]"
-    ERROR = "[ FAIL ]"
-    INFO = "[ INFO ]"
-    SPINNER = ["/", "-", "\\", "|"]
+class Sym:
+    OK      = f"{C.GREEN}[ OK ]{C.RESET}"
+    FAIL    = f"{C.RED}[ FAIL ]{C.RESET}"
+    INFO    = f"{C.CYAN}[ INFO ]{C.RESET}"
+    WARN    = f"{C.YELLOW}[ WARN ]{C.RESET}"
+    SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
-# Configuration
-LOG_FILE = "/tmp/nen-install.log"
-TOTAL_STEPS = 12
-HOSTNAME = "archlinux"
-TIMEZONE = "Europe/Istanbul"
-LOCALE = "en_US.UTF-8"
-KEYMAP = "trq"
-EFI_SIZE_MIB = 1024
+HEADER = r"""
+  _____ _
+ | _ |___ ___| |_ ___ _ _ ___ ___
+ | | _| _| | . | | | -_| |
+ |__|__|_| |___|_|_|_ |___|___|_|_|
+                  |_|
+"""
+
+# ─── Configuration ─────────────────────────────────────────────────────────────
+
+LOG_FILE       = Path("/tmp/nen-install.log")
+TOTAL_STEPS    = 8   # welcome · disk · partition · mount · base · configure · finish
+HOSTNAME       = "archlinux"
+TIMEZONE       = "Europe/Istanbul"
+LOCALE         = "en_US.UTF-8"
+KEYMAP         = "trq"
+EFI_SIZE_MIB   = 1024
 BTRFS_COMPRESS = "zstd:3"
-SWAP_SIZE = "16G"
+SWAP_SIZE      = "16G"
+MIN_DISK_BYTES = 30 * 1024 ** 3
+MIN_FREE_BYTES = 30 * 1024 ** 3
 
-HEADER = r'''
- _____         _                   
-|  _  |___ ___| |_ ___ _ _ ___ ___ 
-|     |  _|  _|   | . | | | -_|   |
-|__|__|_| |___|_|_|_  |___|___|_|_|
-                    |_|            
-'''
+# Valid Linux username: starts with letter/underscore, then letters/digits/underscore/hyphen
+USERNAME_RE = re.compile(r'^[a-z_][a-z0-9_-]{0,31}$')
 
-# --- Utility Functions ---
-def typewriter_print(text, delay=0.01, color=Colors.RESET):
+BASE_PACKAGES = [
+    "base", "linux-cachyos", "linux-cachyos-headers", "linux-firmware",
+    "intel-ucode", "btrfs-progs", "sudo", "base-devel", "git", "go",
+    "networkmanager", "bluez", "bluez-utils",
+    "pipewire", "pipewire-pulse", "wireplumber",
+    "ly",
+    "plasma-desktop", "plasma-nm", "powerdevil", "kinfocenter",
+    "spectacle", "bluedevil", "plasma-pa", "plasma-systemmonitor",
+    "xorg-xwayland", "breeze-gtk",
+    "kitty", "dolphin", "ark", "unzip", "unrar", "gwenview", "kate",
+    "noto-fonts", "noto-fonts-emoji", "ttf-jetbrains-mono-nerd",
+    "sof-firmware", "alsa-ucm-conf",
+    "bash-completion",
+]
+
+# Dual-boot: GRUB is mandatory (it can chain-load Windows; systemd-boot cannot)
+GRUB_PACKAGES = ["grub", "efibootmgr", "os-prober", "ntfs-3g"]
+
+NVIDIA_PACKAGES = [
+    "nvidia-open",
+    "nvidia-utils",
+    "lib32-nvidia-utils",
+    "libvdpau",
+    "libva-nvidia-driver",
+    "vulkan-icd-loader",
+    "lib32-vulkan-icd-loader",
+]
+
+# ─── Data types ────────────────────────────────────────────────────────────────
+
+@dataclass
+class DiskInfo:
+    name:        str
+    size_bytes:  int
+    size_str:    str
+    partitions:  list = field(default_factory=list)
+    removable:   bool = False
+
+@dataclass
+class PartInfo:
+    name:        str
+    size_bytes:  int
+    size_str:    str
+    fs_type:     str
+    label:       str
+    is_free:     bool = False
+    mountpoint:  str = ""
+    # Filled only for is_free entries:
+    _free_start: int = 0
+    _free_end:   int = 0
+
+# ─── Logging ───────────────────────────────────────────────────────────────────
+
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.DEBUG,
+    format="[%(asctime)s] %(levelname)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+log = logging.getLogger("installer")
+
+# ─── Helpers ───────────────────────────────────────────────────────────────────
+
+def typewriter(text: str, delay: float = 0.015, color: str = C.RESET) -> None:
     sys.stdout.write(color)
-    for char in text:
-        sys.stdout.write(char)
+    for ch in text:
+        sys.stdout.write(ch)
         sys.stdout.flush()
         time.sleep(delay)
-    sys.stdout.write(Colors.RESET + "\n")
+    sys.stdout.write(C.RESET + "\n")
+
+def fmt_bytes(n: int) -> str:
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if n < 1024:
+            return f"{n:.1f} {unit}"
+        n /= 1024
+    return f"{n:.1f} PB"
+
 
 class Spinner:
-    def __init__(self, message="Working..."):
+    def __init__(self, message: str = "Working..."):
         self.message = message
-        self.stop_running = threading.Event()
-        self.spin_thread = threading.Thread(target=self._animate)
+        self._stop   = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
 
-    def _animate(self):
-        for char in itertools.cycle(Symbol.SPINNER):
-            if self.stop_running.is_set():
+    def _run(self) -> None:
+        for frame in itertools.cycle(Sym.SPINNER):
+            if self._stop.is_set():
                 break
-            sys.stdout.write(f"\r  {Colors.CYAN}{char}{Colors.RESET} {self.message}")
+            sys.stdout.write(f"\r  {C.CYAN}{frame}{C.RESET}  {self.message}  ")
             sys.stdout.flush()
-            time.sleep(0.1)
-        sys.stdout.write("\r" + " " * (len(self.message) + 10) + "\r")
+            time.sleep(0.08)
+        sys.stdout.write("\r" + " " * (len(self.message) + 12) + "\r")
 
     def __enter__(self):
-        self.spin_thread.start()
+        self._thread.start()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.stop_running.set()
-        self.spin_thread.join()
+    def __exit__(self, *_):
+        self._stop.set()
+        self._thread.join()
 
-# --- Core Installer ---
+
+class InstallError(Exception):
+    pass
+
+
+# ─── Core Installer ────────────────────────────────────────────────────────────
+
 class Installer:
     def __init__(self):
-        self.current_step = 0
-        self.ui_mode = "welcome"
-        self.bootloader = "systemd-boot"
-        self.username = ""
-        self.password = ""
-        self.disk = ""
-        self.p1 = self.p2 = self.p3 = ""
-        self.root_uuid = ""
+        self.step        = 0
+        self.in_progress = False
+        self.bootloader  = "systemd-boot"
+        self.username    = ""
+        self.password    = ""
+        self.nvidia_gpu  = False
+        self.has_igpu    = False
 
-    def log(self, message):
-        with open(LOG_FILE, "a") as f:
-            f.write(f"[{time.strftime('%H:%M:%S')}] {message}\n")
+        self.install_mode  = "clean"
+        self.disk          = ""
+        self.p_efi         = ""
+        self.p_swap        = ""
+        self.p_root        = ""
+        self.root_uuid     = ""
+        self.win_efi_part  = ""
+        self.free_start    = 0    # int, not str
+        self.free_end      = 0    # int, not str
 
-    def run(self, cmd, check=True, capture=False, silent=False):
-        self.log(f"EXEC: {cmd}")
+    # ── Shell helpers ────────────────────────────────────────────────────────
+
+    def run(self, cmd: str, *, check: bool = True, capture: bool = False):
+        log.debug("EXEC: %s", cmd)
         try:
             if capture:
-                result = subprocess.run(cmd, shell=True, check=check, text=True, capture_output=True)
-                return result.stdout.strip()
-            else:
-                with open(LOG_FILE, "a") as f:
-                    subprocess.run(cmd, shell=True, check=check, stdout=f, stderr=f)
-                return True
-        except subprocess.CalledProcessError as e:
-            self.on_error(f"Hardware/System Error: Command failed with code {e.returncode}\nCMD: {cmd}")
-            sys.exit(1)
+                r = subprocess.run(cmd, shell=True, check=check,
+                                   text=True, capture_output=True)
+                return r.stdout.strip()
+            with LOG_FILE.open("a") as fh:
+                subprocess.run(cmd, shell=True, check=check,
+                               stdout=fh, stderr=fh)
+            return True
+        except subprocess.CalledProcessError as exc:
+            raise InstallError(
+                f"Command exited with code {exc.returncode}\n→ {cmd}"
+            ) from exc
 
-    def safe_input(self, prompt=""):
+    def chroot_run(self, script: str) -> None:
+        tmp = Path("/mnt/_nen_setup.sh")
+        tmp.write_text(script)
+        try:
+            self.run("arch-chroot /mnt /bin/bash /_nen_setup.sh")
+        finally:
+            tmp.unlink(missing_ok=True)
+
+    # ── Input ────────────────────────────────────────────────────────────────
+
+    def prompt(self, msg: str) -> str:
         os.system("tput cnorm")
         try:
-            user_input = input(prompt)
+            val = input(msg)
         except EOFError:
-            try:
-                with open("/dev/tty", "r") as tty:
-                    sys.stdout.write(prompt)
-                    sys.stdout.flush()
-                    user_input = tty.readline().strip()
-            except Exception:
-                user_input = ""
+            with open("/dev/tty") as tty:
+                sys.stdout.write(msg)
+                sys.stdout.flush()
+                val = tty.readline().strip()
         finally:
-            if self.ui_mode != "welcome":
+            if self.in_progress:
                 os.system("tput civis")
-        return user_input
+        return val
 
-    def check_pkg(self, pkg_name):
-        try:
-            res = subprocess.run(f"pacman -Si {pkg_name}", shell=True, capture_output=True, text=True)
-            return res.returncode == 0
-        except:
-            return False
+    # ── Rendering ────────────────────────────────────────────────────────────
 
-    def setup_cachyos(self, target=None):
-        msg = f"Injecting CachyOS optimizations into {'target' if target else 'host'}..."
-        with Spinner(msg):
-            # If in live host, redirect cache to physical disk to avoid 'disk full' error
-            if not target:
-                os.system("mount -o remount,size=75% / &>/dev/null")
-                os.makedirs("/mnt/var/cache/pacman/pkg", exist_ok=True)
-                self.run("mount --bind /mnt/var/cache/pacman/pkg /var/cache/pacman/pkg", check=False)
+    def _header(self) -> None:
+        sys.stdout.write(C.CLEAR)
+        for line in HEADER.strip("\n").splitlines():
+            print(f"  {C.LILAC}{line}{C.RESET}")
+        print(f"  {C.DIM}Nen's personal Arch installer — CachyOS edition{C.RESET}\n")
 
-            script = """
-set -e
-mkdir -p /mnt/tmp/cachyos-setup
-cd /mnt/tmp/cachyos-setup
-echo "i Fetching official CachyOS repository package..."
-curl -sLO https://mirror.cachyos.org/cachyos-repo.tar.xz
-tar xvf cachyos-repo.tar.xz
-cd cachyos-repo
-echo "i Running official repository configuration (High Resource Step)..."
-# Disable 'set -e' temporarily to allow mirror-rating even if initial sync is shaky
-set +e
-yes | ./cachyos-repo.sh
-echo "i Optimizing mirrors for maximum performance..."
-if command -v cachyos-rate-mirrors &>/dev/null; then
-    cachyos-rate-mirrors
-else
-    # Fallback to forced full database refresh
-    pacman -Syy
-fi
-set -e
-"""
-            if target:
-                # Inside chroot, move script to root to ensure accessibility
-                inner_script = script.replace("/mnt/tmp/cachyos-setup", "/tmp/cachyos-setup")
-                with open(f"{target}/cachy_setup.sh", "w") as f: f.write(inner_script)
-                self.run(f"arch-chroot {target} bash /cachy_setup.sh")
-                self.run(f"rm -f {target}/cachy_setup.sh", check=False)
-            else:
-                with open("/tmp/cachy.sh", "w") as f: f.write(script)
-                self.run("bash /tmp/cachy.sh")
-
-    def render(self):
-        sys.stdout.write(Colors.CLEAR)
-        # Main Logo (Offset to center)
-        for line in HEADER.strip("\n").split("\n"):
-            print(f"     {Colors.LILAC}{line}{Colors.RESET}")
-        
-        # Centered Sub-header
-        print(f"        {Colors.DIM}Nen's personal arch installer{Colors.RESET}\n")
-
-        if self.ui_mode == "welcome":
-            print(f"\n  {Colors.BOLD}SYSTEM READY.{Colors.RESET}")
+    def render(self) -> None:
+        self._header()
+        if not self.in_progress:
+            print(f"\n  {C.BOLD}SYSTEM READY.{C.RESET}")
             return
+        width  = 42
+        pct    = int(self.step * 100 / TOTAL_STEPS)
+        filled = int(self.step * width / TOTAL_STEPS)
+        color  = C.BLUE if pct < 40 else (C.CYAN if pct < 80 else C.GREEN)
+        bar    = f"{color}{'█' * filled}{C.DIM}{'░' * (width - filled)}{C.RESET}"
+        print(f"\n  {C.DIM}Progress:{C.RESET}")
+        print(f"  [{bar}] {C.BOLD}{pct}%{C.RESET}  ({self.step}/{TOTAL_STEPS})")
+        print(f"  {C.DIM}Log → {LOG_FILE}{C.RESET}\n")
 
-        # Progress Section
-        print(f"\n  {Colors.DIM}Installation Status:{Colors.RESET}")
-        width = 40
-        percent = int(self.current_step * 100 / TOTAL_STEPS)
-        filled = int(self.current_step * width / TOTAL_STEPS)
-        empty = width - filled
-        
-        # Color transition for bar
-        if percent < 40: bar_color = Colors.BLUE
-        elif percent < 80: bar_color = Colors.CYAN
-        else: bar_color = Colors.GREEN
-
-        bar = f"{bar_color}{Symbol.BLOCK_FULL * filled}{Colors.DIM}{Symbol.BLOCK_LIGHT * empty}{Colors.RESET}"
-        print(f"  [{bar}] {Colors.BOLD}{percent}%{Colors.RESET}")
-        print(f"  {Colors.DIM}Log: {LOG_FILE}{Colors.RESET}\n")
-
-    def progress_next(self, msg=None):
-        if msg:
-            self.log(msg)
-            print(f"  {Colors.GREEN}{Symbol.SUCCESS}{Colors.RESET} {msg}")
-        self.current_step += 1
-        time.sleep(0.5)
+    def tick(self, msg: str) -> None:
+        log.info(msg)
+        print(f"  {Sym.OK}  {msg}")
+        self.step += 1
+        time.sleep(0.3)
         self.render()
 
-    def on_error(self, err_msg):
+    def abort(self, msg: str) -> None:
         self.render()
-        print(f"\n  {Colors.RED}{Colors.BOLD}{Symbol.ERROR} FATAL ERROR:{Colors.RESET}")
-        print(f"  {Colors.RED}{err_msg}{Colors.RESET}")
-        print(f"\n  {Colors.YELLOW}{Symbol.INFO} Log snippet:{Colors.RESET}")
-        if os.path.exists(LOG_FILE):
-            subprocess.run(f"tail -n 10 {LOG_FILE}", shell=True)
-        print(f"\n  {Colors.BOLD}Press Enter to exit...{Colors.RESET}")
+        print(f"\n  {Sym.FAIL}  {C.BOLD}FATAL:{C.RESET} {C.RED}{msg}{C.RESET}")
+        print(f"\n  {Sym.INFO}  Last log lines:\n")
+        subprocess.run(f"tail -n 15 {LOG_FILE}", shell=True)
+        print(f"\n  Press Enter to exit…")
         try:
-            self.safe_input()
-        except:
+            self.prompt("")
+        except Exception:
             pass
 
-    def welcome(self):
-        os.system("tput civis")
-        self.render()
-        typewriter_print("  Welcome", delay=0.02, color=Colors.CYAN)
-        time.sleep(1)
+    # ── CachyOS repo ─────────────────────────────────────────────────────────
 
-        # Pre-flight checks
-        if not os.path.isdir("/sys/firmware/efi/efivars"):
-            self.on_error("EFI Vars not found. Please boot in UEFI mode.")
-            sys.exit(1)
+    def _cachyos_script(self) -> str:
+        return """set -euo pipefail
+tmpdir=$(mktemp -d)
+trap 'rm -rf "$tmpdir"' EXIT
+cd "$tmpdir"
+curl -sLO https://mirror.cachyos.org/cachyos-repo.tar.xz
+tar xf cachyos-repo.tar.xz
+cd cachyos-repo
+set +e
+yes | ./cachyos-repo.sh
+set -e
+command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || pacman -Syy
+"""
 
-        # Check internet
-        typewriter_print("  Checking internet connection...", delay=0.01)
-        try:
-            subprocess.run("curl -fsSL --max-time 3 https://archlinux.org/", shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            print(f"  {Colors.GREEN}{Symbol.SUCCESS} Internet available.{Colors.RESET}")
-        except:
-            self.on_error("No network detected. Internet is required.")
-            sys.exit(1)
+    def setup_cachyos(self, target: Optional[str] = None) -> None:
+        label = f"into {target}" if target else "on live host"
+        with Spinner(f"Injecting CachyOS repositories {label}…"):
+            script = self._cachyos_script()
+            if target:
+                self.chroot_run(script)
+            else:
+                os.system("mount -o remount,size=75% / 2>/dev/null || true")
+                Path("/mnt/var/cache/pacman/pkg").mkdir(parents=True, exist_ok=True)
+                self.run("mount --bind /mnt/var/cache/pacman/pkg /var/cache/pacman/pkg",
+                         check=False)
+                with tempfile.NamedTemporaryFile("w", suffix=".sh", delete=False) as f:
+                    f.write(script)
+                    tmp_path = f.name
+                try:
+                    self.run(f"bash {tmp_path}")
+                finally:
+                    Path(tmp_path).unlink(missing_ok=True)
 
-        print(f"\n  {Colors.BOLD}USER CONFIGURATION{Colors.RESET}")
-        self.username = self.safe_input(f"  {Colors.CYAN}> Username:{Colors.RESET} ").strip()
-        while not self.username:
-            self.username = self.safe_input(f"  {Colors.RED}! Username cannot be empty:{Colors.RESET} ").strip()
-        
-        while True:
-            os.system("tput cnorm")
-            self.password = getpass.getpass(f"  {Colors.CYAN}> Password:{Colors.RESET} ")
-            p2 = getpass.getpass(f"  {Colors.CYAN}> Confirm Password:{Colors.RESET} ")
-            if self.password and self.password == p2:
-                break
-            print(f"  {Colors.RED}! Match error. Try again.{Colors.RESET}")
+    # ── Pre-flight checks ────────────────────────────────────────────────────
 
-        print(f"\n  {Colors.BOLD}BOOTLOADER SELECTION{Colors.RESET}")
-        print(f"  {Colors.DIM}1) Systemd-boot{Colors.RESET}")
-        print(f"  {Colors.DIM}2) GRUB{Colors.RESET}")
-        bc = self.safe_input(f"  {Colors.CYAN}> Select [1/2] (Default 1):{Colors.RESET} ").strip() or "1"
-        self.bootloader = "grub" if bc == "2" else "systemd-boot"
+    def _check_uefi(self) -> None:
+        if not Path("/sys/firmware/efi/efivars").is_dir():
+            raise InstallError("EFI vars not found — please boot in UEFI mode.")
 
-    def detect_disk(self):
-        self.ui_mode = "progress"
-        self.render()
-        print(f"  {Colors.CYAN}{Symbol.INFO} Scanning storage topology...{Colors.RESET}")
-        
-        cmd = "lsblk -dpno NAME,TYPE,SIZE,RM | awk '$2==\"disk\" && $4==0 {print $1, $3}' | sort -h -k2 | tail -n1 | awk '{print $1}'"
-        self.disk = self.run(cmd, capture=True)
-        
-        if not self.disk:
-            self.on_error("No physical disks detected.")
-            sys.exit(1)
+    def _check_internet(self) -> None:
+        with Spinner("Checking internet connection…"):
+            r = subprocess.run(
+                "curl -fsSL --max-time 5 https://archlinux.org/",
+                shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+        if r.returncode != 0:
+            raise InstallError("No internet connection detected.")
+        print(f"  {Sym.OK}  Internet available.")
 
-        size_str = self.run(f"lsblk -dno SIZE {self.disk}", capture=True)
-        print(f"  {Colors.BOLD}Target Disk:{Colors.RESET} {Colors.YELLOW}{self.disk}{Colors.RESET} ({size_str})")
-        
-        # Space check
-        bytes = int(self.run(f"lsblk -bdno SIZE {self.disk} | head -n1", capture=True) or 0)
-        if bytes < 30 * 1024**3:
-            self.on_error("Insufficient storage (< 30GB).")
-            sys.exit(1)
+    def _check_nvidia(self) -> None:
+        with Spinner("Detecting GPU(s)…"):
+            lspci = subprocess.run(
+                "lspci -nn", shell=True, capture_output=True, text=True
+            ).stdout
 
-        typewriter_print(f"\n  ! WARNING: ALL DATA ON {self.disk} WILL BE WIPED !", 0.02, color=Colors.RED)
-        print(f"  Proceeding in 5 seconds... (Ctrl+C to abort)")
-        time.sleep(5)
-        self.progress_next("Hardware validation complete")
+        def is_display(line: str) -> bool:
+            return any(c in line for c in ["VGA", "3D", "Display"])
 
-    def partition_and_format(self):
-        if "nvme" in self.disk or "mmcblk" in self.disk:
-            self.p1, self.p2, self.p3 = f"{self.disk}p1", f"{self.disk}p2", f"{self.disk}p3"
+        nvidia_lines = [l for l in lspci.splitlines()
+                        if "NVIDIA" in l and is_display(l)]
+        igpu_lines   = [l for l in lspci.splitlines()
+                        if any(v in l for v in ["Intel", "AMD", "ATI"])
+                        and is_display(l)]
+
+        self.nvidia_gpu = bool(nvidia_lines)
+        self.has_igpu   = bool(igpu_lines)
+
+        if self.nvidia_gpu:
+            gpu_name = nvidia_lines[0].split(":")[-1].strip()
+            print(f"  {Sym.OK}  NVIDIA GPU  → {C.YELLOW}{gpu_name}{C.RESET}")
+            if self.has_igpu:
+                igpu_name = igpu_lines[0].split(":")[-1].strip()
+                print(f"  {Sym.INFO}  iGPU        → {C.DIM}{igpu_name}{C.RESET}")
+                print(f"  {Sym.INFO}  Hybrid graphics — PRIME will be configured.")
         else:
-            self.p1, self.p2, self.p3 = f"{self.disk}1", f"{self.disk}2", f"{self.disk}3"
+            print(f"  {Sym.INFO}  No NVIDIA GPU found — skipping NVIDIA setup.")
 
-        with Spinner("Formatting file structures..."):
-            # Aggressive cleanup of previous mounts/binds
-            os.system("umount -l /var/cache/pacman/pkg 2>/dev/null")
-            os.system("umount -R /mnt 2>/dev/null")
-            os.system("swapoff -a 2>/dev/null")
-            
+    # ── Disk scanning ────────────────────────────────────────────────────────
+
+    def _scan_disks(self) -> list:
+        raw = subprocess.run(
+            "lsblk -dpno NAME,SIZE,RM,TYPE",
+            shell=True, capture_output=True, text=True
+        ).stdout.strip()
+
+        disks = []
+        for line in raw.splitlines():
+            parts = line.split()
+            if len(parts) < 4:
+                continue
+            name, size_str, removable, dtype = parts[0], parts[1], parts[2], parts[3]
+            if dtype != "disk" or removable == "1":
+                continue
+            size_bytes = int(subprocess.run(
+                f"lsblk -bdno SIZE {name}",
+                shell=True, capture_output=True, text=True
+            ).stdout.strip() or 0)
+            d = DiskInfo(name=name, size_bytes=size_bytes, size_str=size_str)
+            d.partitions = self._scan_partitions(d)
+            disks.append(d)
+
+        return sorted(disks, key=lambda d: d.size_bytes, reverse=True)
+
+    def _scan_partitions(self, disk: DiskInfo) -> list:
+        parts = []
+
+        # ── Existing partitions via lsblk ────────────────────────────────────
+        raw = subprocess.run(
+            f"lsblk -pno NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT {disk.name}",
+            shell=True, capture_output=True, text=True
+        ).stdout.strip()
+
+        for line in raw.splitlines():
+            cols = line.split(None, 4)
+            pname = cols[0] if len(cols) > 0 else ""
+            if pname == disk.name:
+                continue
+            psize_str  = cols[1] if len(cols) > 1 else "?"
+            fs_type    = cols[2] if len(cols) > 2 else ""
+            label      = cols[3] if len(cols) > 3 else ""
+            mountpoint = cols[4] if len(cols) > 4 else ""
+            psize_bytes = int(subprocess.run(
+                f"lsblk -bdno SIZE {pname}",
+                shell=True, capture_output=True, text=True
+            ).stdout.strip() or 0)
+            parts.append(PartInfo(
+                name=pname, size_bytes=psize_bytes, size_str=psize_str,
+                fs_type=fs_type, label=label, mountpoint=mountpoint.strip()
+            ))
+
+        # ── Unallocated regions via sgdisk ────────────────────────────────────
+        sgdisk_out = subprocess.run(
+            f"sgdisk -p {disk.name} 2>/dev/null",
+            shell=True, capture_output=True, text=True
+        ).stdout
+
+        sector_size = 512
+        for line in sgdisk_out.splitlines():
+            if "Logical sector size:" in line:
+                try:
+                    sector_size = int(line.split()[-2])
+                except (IndexError, ValueError):
+                    pass
+
+        first_usable = last_usable = 0
+        for line in sgdisk_out.splitlines():
+            if "First usable sector" in line:
+                try: first_usable = int(line.split()[-1])
+                except ValueError: pass
+            if "Last usable sector" in line:
+                try: last_usable = int(line.split()[-1])
+                except ValueError: pass
+
+        ranges = []
+        in_table = False
+        for line in sgdisk_out.splitlines():
+            if line.strip().startswith("Number"):
+                in_table = True
+                continue
+            if in_table and line.strip():
+                cols = line.split()
+                if len(cols) >= 3:
+                    try:
+                        start = int(cols[1])
+                        end   = int(cols[2])
+                        ranges.append((start, end))
+                    except ValueError:
+                        pass
+
+        ranges.sort()
+        cursor = first_usable
+        for (start, end) in ranges:
+            if start > cursor + 2048:
+                gap_start = cursor
+                gap_end   = start - 1
+                free_bytes = (gap_end - gap_start + 1) * sector_size
+                if free_bytes >= 5 * 1024 ** 3:
+                    parts.append(PartInfo(
+                        name="", size_bytes=free_bytes,
+                        size_str=fmt_bytes(free_bytes),
+                        fs_type="", label="Unallocated",
+                        is_free=True,
+                        _free_start=gap_start,
+                        _free_end=gap_end,
+                    ))
+            cursor = end + 1
+
+        # Trailing free space after the last partition
+        if last_usable > cursor + 2048:
+            free_bytes = (last_usable - cursor + 1) * sector_size
+            if free_bytes >= 5 * 1024 ** 3:
+                parts.append(PartInfo(
+                    name="", size_bytes=free_bytes,
+                    size_str=fmt_bytes(free_bytes),
+                    fs_type="", label="Unallocated",
+                    is_free=True,
+                    _free_start=cursor,
+                    _free_end=last_usable,
+                ))
+
+        return parts
+
+    def _has_windows(self, disk: DiskInfo) -> bool:
+        """True if any partition on this disk looks like a Windows install."""
+        for p in disk.partitions:
+            if p.is_free:
+                continue
+            # NTFS/exFAT data partition → Windows data drive (not conclusive alone)
+            if p.fs_type in ("ntfs", "exfat"):
+                return True
+            # FAT32 EFI partition: check for \EFI\Microsoft directory
+            if p.fs_type in ("vfat",):
+                tmp_mp = "/tmp/_nen_win_check"
+                os.makedirs(tmp_mp, exist_ok=True)
+                r = subprocess.run(
+                    f"mount -o ro {p.name} {tmp_mp} 2>/dev/null",
+                    shell=True
+                )
+                if r.returncode == 0:
+                    has_ms = os.path.isdir(f"{tmp_mp}/EFI/Microsoft")
+                    subprocess.run(f"umount {tmp_mp}", shell=True,
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    if has_ms:
+                        return True
+        return False
+
+    def _find_efi_partition(self, disk: DiskInfo) -> str:
+        """
+        Return the path of the existing EFI system partition on this disk.
+        We probe each vfat partition (by temporarily mounting it) and look
+        for an /EFI directory.  The Windows EFI partition will always have
+        /EFI/Microsoft; any other ESP will have /EFI/<vendor>.
+        Returns "" if none found.
+        """
+        tmp_mp = "/tmp/_nen_efi_find"
+        os.makedirs(tmp_mp, exist_ok=True)
+
+        for p in disk.partitions:
+            if p.is_free or p.fs_type not in ("vfat", ""):
+                continue
+            # If already mounted, check in-place
+            if p.mountpoint:
+                if os.path.isdir(f"{p.mountpoint}/EFI"):
+                    return p.name
+                continue
+            # Try mounting read-only
+            r = subprocess.run(
+                f"mount -o ro {p.name} {tmp_mp} 2>/dev/null",
+                shell=True
+            )
+            if r.returncode != 0:
+                continue
+            has_efi = os.path.isdir(f"{tmp_mp}/EFI")
+            subprocess.run(f"umount {tmp_mp}", shell=True,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if has_efi:
+                return p.name
+
+        return ""
+
+    # ── Disk selection UI ────────────────────────────────────────────────────
+
+    def _print_disk_map(self, disks: list) -> None:
+        print(f"\n  {C.BOLD}DETECTED STORAGE{C.RESET}\n")
+        for i, disk in enumerate(disks):
+            win_tag = (f"  {C.YELLOW}[Windows detected]{C.RESET}"
+                       if self._has_windows(disk) else "")
+            print(f"  {C.BOLD}{C.CYAN}[{i+1}]{C.RESET}  {C.BOLD}{disk.name}{C.RESET}  "
+                  f"({disk.size_str}){win_tag}")
+            for p in disk.partitions:
+                if p.is_free:
+                    icon  = f"{C.GREEN}◈{C.RESET}"
+                    label = f"{C.GREEN}Free space  ← available for Arch{C.RESET}"
+                    fsstr = ""
+                else:
+                    icon  = f"{C.DIM}▪{C.RESET}"
+                    label = p.label or p.name
+                    fsstr = f"  {C.DIM}[{p.fs_type}]{C.RESET}" if p.fs_type else ""
+                print(f"         {icon}  {label}  {p.size_str}{fsstr}")
+            print()
+
+    def step_detect_disk(self) -> None:
+        self.render()
+
+        with Spinner("Scanning all storage devices…"):
+            disks = self._scan_disks()
+
+        if not disks:
+            raise InstallError("No physical disks found.")
+
+        self._print_disk_map(disks)
+
+        # ── Detect dual-boot candidates ─────────────────────────────────────
+        # A dual-boot candidate is a disk that has Windows AND at least one
+        # unallocated region >= 30 GB (the user already ran Shrink Volume).
+        dualboot_candidates = []
+        for disk in disks:
+            if not self._has_windows(disk):
+                continue
+            free_parts = [p for p in disk.partitions
+                          if p.is_free and p.size_bytes >= MIN_FREE_BYTES]
+            if free_parts:
+                dualboot_candidates.append((disk, free_parts))
+
+        # ── Present mode options ────────────────────────────────────────────
+        print(f"  {C.BOLD}INSTALLATION MODE{C.RESET}\n")
+
+        if dualboot_candidates:
+            print(f"  {C.GREEN}Dual-boot candidate(s) detected!{C.RESET}")
+            for disk, fparts in dualboot_candidates:
+                for fp in fparts:
+                    print(f"  {Sym.INFO}  {disk.name} → "
+                          f"{C.GREEN}{fp.size_str}{C.RESET} unallocated "
+                          f"— ready for Arch alongside Windows.")
+            print()
+
+        print(f"  {C.DIM}1){C.RESET}  {C.BOLD}Clean install{C.RESET}  "
+              f"— wipe a whole disk and install Arch")
+        if dualboot_candidates:
+            print(f"  {C.DIM}2){C.RESET}  {C.BOLD}Dual-boot{C.RESET}  "
+                  f"— install Arch into the unallocated space (keeps Windows)")
+        print()
+
+        valid_choices = ["1", "2"] if dualboot_candidates else ["1"]
+        while True:
+            choice = self.prompt(
+                f"  {C.CYAN}› Select mode [{'/'.join(valid_choices)}]:{C.RESET} "
+            ).strip()
+            if choice in valid_choices:
+                break
+            print(f"  {Sym.WARN}  Invalid choice.")
+
+        if choice == "1":
+            self._select_clean_disk(disks)
+        else:
+            self._select_dualboot(dualboot_candidates)
+
+        self.tick("Storage target confirmed")
+
+    def _select_clean_disk(self, disks: list) -> None:
+        self.install_mode = "clean"
+
+        if len(disks) == 1:
+            target = disks[0]
+        else:
+            print(f"\n  {C.BOLD}SELECT TARGET DISK{C.RESET} (will be completely wiped)\n")
+            for i, d in enumerate(disks):
+                print(f"  {C.DIM}{i+1}){C.RESET}  {d.name}  ({d.size_str})")
+            while True:
+                raw = self.prompt(f"\n  {C.CYAN}› Disk number:{C.RESET} ").strip()
+                if raw.isdigit() and 1 <= int(raw) <= len(disks):
+                    target = disks[int(raw) - 1]
+                    break
+                print(f"  {Sym.WARN}  Invalid selection.")
+
+        if target.size_bytes < MIN_DISK_BYTES:
+            raise InstallError(
+                f"{target.name} is too small ({target.size_str}). Need ≥ 30 GB."
+            )
+
+        self.disk = target.name
+        typewriter(f"\n  ⚠  ALL DATA ON {self.disk} WILL BE ERASED.", 0.02, C.RED)
+        print(f"  Continuing in 5 seconds… (Ctrl+C to abort)\n")
+        time.sleep(5)
+
+    def _select_dualboot(self, candidates: list) -> None:
+        """
+        Pick the disk + free region for dual-boot.
+        Reuses the existing Windows EFI partition — never creates a new one
+        unless none is found.
+        """
+        self.install_mode = "dualboot"
+        self.bootloader   = "grub"   # GRUB required for Windows chain-loading
+        print(f"\n  {Sym.INFO}  Dual-boot mode forces {C.BOLD}GRUB{C.RESET} "
+              f"(required for Windows chain-loading).")
+
+        # Flatten candidates into a numbered list
+        options = []
+        for disk, fparts in candidates:
+            for fp in fparts:
+                options.append((disk, fp))
+
+        if len(options) == 1:
+            chosen_disk, chosen_free = options[0]
+        else:
+            print(f"\n  {C.BOLD}SELECT UNALLOCATED REGION{C.RESET}\n")
+            for i, (d, fp) in enumerate(options):
+                print(f"  {C.DIM}{i+1}){C.RESET}  {d.name}  → "
+                      f"{C.GREEN}{fp.size_str}{C.RESET} free space")
+            while True:
+                raw = self.prompt(f"\n  {C.CYAN}› Region number:{C.RESET} ").strip()
+                if raw.isdigit() and 1 <= int(raw) <= len(options):
+                    chosen_disk, chosen_free = options[int(raw) - 1]
+                    break
+                print(f"  {Sym.WARN}  Invalid selection.")
+
+        self.disk       = chosen_disk.name
+        self.free_start = chosen_free._free_start   # int
+        self.free_end   = chosen_free._free_end     # int
+
+        self.win_efi_part = self._find_efi_partition(chosen_disk)
+        if self.win_efi_part:
+            print(f"  {Sym.OK}  Reusing existing EFI partition: "
+                  f"{C.YELLOW}{self.win_efi_part}{C.RESET}")
+        else:
+            print(f"  {Sym.WARN}  No existing EFI partition found. "
+                  f"A small one will be created inside the free space.")
+
+        print(f"\n  {Sym.INFO}  Arch will be installed into "
+              f"{C.GREEN}{chosen_free.size_str}{C.RESET} of unallocated space on "
+              f"{C.YELLOW}{self.disk}{C.RESET}.")
+        print(f"  {C.DIM}Windows and all existing data will not be touched.{C.RESET}")
+        print(f"\n  Continuing in 5 seconds… (Ctrl+C to abort)")
+        time.sleep(5)
+
+    # ── Partitioning ─────────────────────────────────────────────────────────
+
+    def step_partition(self) -> None:
+        if self.install_mode == "clean":
+            self._partition_clean()
+        else:
+            self._partition_dualboot()
+
+    def _part_suffix(self) -> str:
+        """NVMe/MMC partitions use a 'p' separator: nvme0n1p1, mmcblk0p1."""
+        return "p" if any(x in self.disk for x in ("nvme", "mmcblk")) else ""
+
+    def _next_part_num(self) -> int:
+        """Return the next available partition number on self.disk."""
+        raw = subprocess.run(
+            f"lsblk -pno NAME {self.disk}",
+            shell=True, capture_output=True, text=True
+        ).stdout.strip()
+        nums = []
+        for line in raw.splitlines():
+            line = line.strip()
+            if line == self.disk:
+                continue
+            tail = line.replace(self.disk, "").lstrip("p")
+            if tail.isdigit():
+                nums.append(int(tail))
+        return max(nums, default=0) + 1
+
+    def _partition_clean(self) -> None:
+        suffix = self._part_suffix()
+        self.p_efi  = f"{self.disk}{suffix}1"
+        self.p_swap = f"{self.disk}{suffix}2"
+        self.p_root = f"{self.disk}{suffix}3"
+
+        with Spinner("Partitioning disk (clean)…"):
+            os.system("umount -l /var/cache/pacman/pkg 2>/dev/null || true")
+            os.system("umount -R /mnt 2>/dev/null || true")
+            os.system("swapoff -a 2>/dev/null || true")
+
             self.run(f"sgdisk --zap-all {self.disk}")
             self.run(f"sgdisk -o {self.disk}")
-            self.run(f"sgdisk -n 1:0:+{EFI_SIZE_MIB}M -t 1:ef00 -c 1:EFI {self.disk}")
-            self.run(f"sgdisk -n 2:0:+{SWAP_SIZE} -t 2:8200 -c 2:SWAP {self.disk}")
-            self.run(f"sgdisk -n 3:0:0 -t 3:8300 -c 3:ARCH {self.disk}")
+            self.run(f"sgdisk -n 1:0:+{EFI_SIZE_MIB}M -t 1:ef00 -c 1:EFI  {self.disk}")
+            self.run(f"sgdisk -n 2:0:+{SWAP_SIZE}     -t 2:8200 -c 2:SWAP {self.disk}")
+            self.run(f"sgdisk -n 3:0:0                -t 3:8300 -c 3:ARCH {self.disk}")
             self.run(f"partprobe {self.disk}", check=False)
             time.sleep(2)
 
-            self.run(f"mkfs.fat -F32 -n EFI {self.p1}")
-            self.run(f"mkfs.btrfs -f -L ARCH {self.p3}")
-            self.run(f"mkswap -L SWAP {self.p2}")
-            self.run(f"swapon {self.p2}", check=False)
-        
-        self.progress_next("Storage mapping finalized")
+            self.run(f"mkfs.fat -F32 -n EFI  {self.p_efi}")
+            self.run(f"mkswap   -L   SWAP     {self.p_swap}")
+            self.run(f"swapon                 {self.p_swap}", check=False)
+            self.run(f"mkfs.btrfs -f -L ARCH  {self.p_root}")
 
-        with Spinner("Mounting filesystem tree..."):
-            self.run(f"mount -o noatime,compress={BTRFS_COMPRESS},space_cache=v2 {self.p3} /mnt")
-            os.makedirs("/mnt/boot", exist_ok=True)
-            self.run(f"mount -o umask=0077 {self.p1} /mnt/boot")
-        self.progress_next("Hierarchy established")
+        self.tick("Disk partitioned (clean)")
 
-    def install_base(self):
+    def _partition_dualboot(self) -> None:
+        """
+        Carve partitions out of the pre-shrunk free space.
+
+        Layout (existing EFI reused):
+          free_start → free_start+SWAP_SIZE   → Linux swap
+          (swap_end) → free_end               → Btrfs root
+
+        If no EFI exists, a 512 MiB EFI is carved first, then swap + root.
+        The Windows EFI partition is NEVER reformatted.
+        """
+        os.system("umount -l /var/cache/pacman/pkg 2>/dev/null || true")
+        os.system("umount -R /mnt 2>/dev/null || true")
+        os.system("swapoff -a 2>/dev/null || true")
+
+        suffix   = self._part_suffix()
+        next_num = self._next_part_num()
+
+        with Spinner("Carving Arch partitions into free space…"):
+            if self.win_efi_part:
+                # ── Reuse existing EFI: create only Swap + Root ───────────────
+                self.p_efi  = self.win_efi_part
+                swap_num    = next_num
+                root_num    = next_num + 1
+
+                # Swap: from free_start for SWAP_SIZE
+                self.run(
+                    f"sgdisk -n {swap_num}:{self.free_start}:+{SWAP_SIZE} "
+                    f"-t {swap_num}:8200 -c {swap_num}:SWAP {self.disk}"
+                )
+                # Root: from after swap to free_end (0 = relative start)
+                self.run(
+                    f"sgdisk -n {root_num}:0:{self.free_end} "
+                    f"-t {root_num}:8300 -c {root_num}:ARCH {self.disk}"
+                )
+            else:
+                # ── No existing EFI: carve EFI + Swap + Root ─────────────────
+                efi_num  = next_num
+                swap_num = next_num + 1
+                root_num = next_num + 2
+
+                self.run(
+                    f"sgdisk -n {efi_num}:{self.free_start}:+512M "
+                    f"-t {efi_num}:ef00 -c {efi_num}:EFI {self.disk}"
+                )
+                self.run(
+                    f"sgdisk -n {swap_num}:0:+{SWAP_SIZE} "
+                    f"-t {swap_num}:8200 -c {swap_num}:SWAP {self.disk}"
+                )
+                self.run(
+                    f"sgdisk -n {root_num}:0:{self.free_end} "
+                    f"-t {root_num}:8300 -c {root_num}:ARCH {self.disk}"
+                )
+                self.p_efi = f"{self.disk}{suffix}{efi_num}"
+                self.run(f"mkfs.fat -F32 -n EFI {self.p_efi}")
+
+            self.run(f"partprobe {self.disk}", check=False)
+            time.sleep(2)
+
+            self.p_swap = f"{self.disk}{suffix}{swap_num}"
+            self.p_root = f"{self.disk}{suffix}{root_num}"
+
+            self.run(f"mkswap   -L SWAP      {self.p_swap}")
+            self.run(f"swapon               {self.p_swap}", check=False)
+            self.run(f"mkfs.btrfs -f -L ARCH {self.p_root}")
+
+        self.tick("Partitions created (dual-boot)")
+
+    def step_mount(self) -> None:
+        with Spinner("Mounting filesystems…"):
+            opts = f"noatime,compress={BTRFS_COMPRESS},space_cache=v2"
+            self.run(f"mount -o {opts} {self.p_root} /mnt")
+
+            # EFI mount point:
+            #   GRUB uses --efi-directory=/boot/efi
+            #   systemd-boot uses /boot directly
+            if self.bootloader == "grub":
+                efi_mp = "/mnt/boot/efi"
+            else:
+                efi_mp = "/mnt/boot"
+
+            Path(efi_mp).mkdir(parents=True, exist_ok=True)
+            self.run(f"mount -o umask=0077 {self.p_efi} {efi_mp}")
+
+        self.tick("Filesystems mounted")
+
+    # ── Base install ─────────────────────────────────────────────────────────
+
+    def step_install_base(self) -> None:
         self.setup_cachyos()
-        
-        with Spinner("Updating system keyrings..."):
+
+        with Spinner("Refreshing keyrings…"):
             self.run("pacman -Sy --noconfirm archlinux-keyring", check=False)
-        self.progress_next("Keyrings modernized")
+        self.tick("Keyrings updated")
 
-        with Spinner("Synchronizing package databases..."):
+        with Spinner("Syncing package databases…"):
             self.run("pacman -Sy")
-        self.progress_next("Repositories synchronized")
+        self.tick("Repositories synced")
 
-        all_pkgs = [
-            "base", "linux-cachyos", "linux-cachyos-headers", "linux-firmware", 
-            "intel-ucode", "btrfs-progs", "sudo", "base-devel", "git", "go", 
-            "networkmanager", "bluez", "bluez-utils", "pipewire", 
-            "pipewire-pulse", "wireplumber", "ly",
-            "plasma-desktop", "plasma-nm", "powerdevil", "kinfocenter",
-            "spectacle", "bluedevil", "plasma-pa", "kitty", "dolphin",
-            "noto-fonts", "noto-fonts-emoji", "ttf-jetbrains-mono-nerd",
-            "ark", "unzip", "unrar", "gwenview", "kate",
-            "plasma-systemmonitor", "xorg-xwayland", "breeze-gtk",
-            "sof-firmware", "alsa-ucm-conf", "bash-completion"
-        ]
-        if self.bootloader == "grub":
-            all_pkgs.extend(["grub", "efibootmgr"])
+        pkgs = list(BASE_PACKAGES)
 
-        valid_pkgs = []
-        with Spinner("Validating hardware drivers..."):
-            for pkg in all_pkgs:
-                if self.check_pkg(pkg):
-                    valid_pkgs.append(pkg)
-                else:
-                    self.log(f"SKIPPED: {pkg} (Not found in repos)")
+        if self.install_mode == "dualboot" or self.bootloader == "grub":
+            pkgs.extend(GRUB_PACKAGES)
+            self.bootloader = "grub"
 
-        print(f"  {Colors.CYAN}{Symbol.INFO} Deploying system core...{Colors.RESET}")
-        self.run(f"pacstrap /mnt {' '.join(valid_pkgs)}")
-        self.progress_next("System core installed")
+        if self.nvidia_gpu:
+            pkgs.extend(NVIDIA_PACKAGES)
+            if self.has_igpu:
+                pkgs.append("nvidia-prime")
 
-    def configure(self):
-        with Spinner("Writing partition map (fstab)..."):
+        with Spinner("Validating package list…"):
+            valid = [
+                p for p in pkgs
+                if subprocess.run(
+                    f"pacman -Si {p}", shell=True, capture_output=True
+                ).returncode == 0
+            ]
+            skipped = set(pkgs) - set(valid)
+            for p in skipped:
+                log.warning("Package not found, skipping: %s", p)
+
+        if skipped:
+            print(f"  {Sym.WARN}  Skipped {len(skipped)} unavailable package(s): "
+                  f"{C.DIM}{', '.join(sorted(skipped))}{C.RESET}")
+
+        print(f"  {Sym.INFO}  Installing {len(valid)} packages via pacstrap…")
+        self.run(f"pacstrap /mnt {' '.join(valid)}")
+        self.tick("Base system installed")
+
+    # ── NVIDIA chroot block ───────────────────────────────────────────────────
+
+    def _build_nvidia_chroot_block(self) -> str:
+        if not self.nvidia_gpu:
+            return "# No NVIDIA GPU — nothing to configure.\n"
+
+        kparams = (
+            "nvidia-drm.modeset=1 "
+            "nvidia-drm.fbdev=1 "
+            "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
+        )
+
+        if self.bootloader == "systemd-boot":
+            bootloader_patch = (
+                f'sed -i "s|^options .*|& {kparams}|" '
+                f'/boot/loader/entries/arch.conf'
+            )
+        else:
+            bootloader_patch = (
+                f'sed -i \'s|^GRUB_CMDLINE_LINUX_DEFAULT="\\(.*\\)"|'
+                f'GRUB_CMDLINE_LINUX_DEFAULT="\\1 {kparams}"|\' /etc/default/grub\n'
+                f'grub-mkconfig -o /boot/grub/grub.cfg'
+            )
+
+        prime_block = ""
+        if self.has_igpu:
+            prime_block = f"""
+# ── PRIME render offload ──────────────────────────────────────────────────────
+cat >> /etc/environment.d/10-nvidia.conf << 'EOF_PRIME'
+__NV_PRIME_RENDER_OFFLOAD=1
+__VK_LAYER_NV_optimus=NVIDIA_only
+EOF_PRIME
+mkdir -p /home/{self.username}/.local/share/applications
+cp /usr/share/applications/kitty.desktop \\
+   /home/{self.username}/.local/share/applications/kitty-nvidia.desktop 2>/dev/null || true
+sed -i \\
+    "s|^Exec=kitty|Exec=prime-run kitty|;s|^Name=kitty|Name=kitty (NVIDIA)|" \\
+    /home/{self.username}/.local/share/applications/kitty-nvidia.desktop 2>/dev/null || true
+chown -R {self.username}:{self.username} /home/{self.username}/.local
+"""
+
+        return f"""
+# ── NVIDIA (linux-cachyos · nvidia-open pre-built) ────────────────────────────
+sed -i '/^MODULES=/{{s/)$/ nvidia nvidia_modeset nvidia_uvm nvidia_drm)/}}' \\
+    /etc/mkinitcpio.conf
+mkinitcpio -P linux-cachyos
+
+{bootloader_patch}
+
+cat > /etc/modprobe.d/blacklist-nouveau.conf << 'EOF_NOUVEAU'
+blacklist nouveau
+options nouveau modeset=0
+EOF_NOUVEAU
+
+systemctl enable nvidia-suspend nvidia-resume nvidia-hibernate 2>/dev/null || true
+
+mkdir -p /etc/environment.d
+cat > /etc/environment.d/10-nvidia.conf << 'EOF_ENV'
+GBM_BACKEND=nvidia-drm
+__GLX_VENDOR_LIBRARY_NAME=nvidia
+LIBVA_DRIVER_NAME=nvidia
+VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json
+NVD_BACKEND=direct
+EOF_ENV
+{prime_block}
+"""
+
+    # ── Configure ────────────────────────────────────────────────────────────
+
+    def step_configure(self) -> None:
+        with Spinner("Generating fstab…"):
             self.run("genfstab -U /mnt >> /mnt/etc/fstab")
-        self.progress_next("Configuration persistent")
+        self.tick("fstab written")
 
-        self.root_uuid = self.run(f"blkid -s UUID -o value {self.p3}", capture=True)
+        self.root_uuid = self.run(
+            f"blkid -s UUID -o value {self.p_root}", capture=True
+        )
         shutil.copy("/etc/resolv.conf", "/mnt/etc/resolv.conf")
 
-        chroot_cmds = f"""
+        # ── Bootloader snippet ──────────────────────────────────────────────
+        if self.bootloader == "systemd-boot":
+            # EFI is mounted at /boot for systemd-boot
+            bootloader_cmds = f"""
+bootctl install
+cat > /boot/loader/loader.conf << 'EOF'
+default arch
+timeout 3
+editor no
+EOF
+UCODE=""
+[ -f /boot/intel-ucode.img ] && UCODE="\\ninitrd /intel-ucode.img"
+printf 'title   Arch Linux (CachyOS)\\nlinux   /vmlinuz-linux-cachyos%s\\ninitrd  /initramfs-linux-cachyos.img\\noptions root=UUID={self.root_uuid} rw quiet splash\\n' \\
+    "$UCODE" > /boot/loader/entries/arch.conf
+"""
+        else:
+            # GRUB — EFI is mounted at /boot/efi
+            # arch-chroot already has /dev /proc /sys bound, so os-prober works.
+            bootloader_cmds = """
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+
+# Enable os-prober so GRUB detects Windows automatically
+sed -i 's/^#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/' /etc/default/grub
+sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=10/' /etc/default/grub
+
+grub-mkconfig -o /boot/grub/grub.cfg
+"""
+
+        nvidia_block = self._build_nvidia_chroot_block()
+
+        chroot_script = f"""#!/bin/bash
+set -euo pipefail
+
+# ── Locale & clock ────────────────────────────────────────────────────────────
 ln -sf /usr/share/zoneinfo/{TIMEZONE} /etc/localtime
 hwclock --systohc
-sed -i "s/^#{LOCALE}/{LOCALE}/" /etc/locale.gen
+sed -i 's/^#\\({LOCALE}\\)/\\1/' /etc/locale.gen
 locale-gen
-echo "LANG={LOCALE}" > /etc/locale.conf
+echo "LANG={LOCALE}"   > /etc/locale.conf
 echo "KEYMAP={KEYMAP}" > /etc/vconsole.conf
-echo "{HOSTNAME}" > /etc/hostname
-printf "127.0.0.1 localhost\\n::1 localhost\\n127.0.1.1 {HOSTNAME}.localdomain {HOSTNAME}\\n" > /etc/hosts
-useradd -m -G wheel -s /bin/bash "{self.username}"
-echo "{self.username}:{self.password}" | chpasswd
-echo "root:{self.password}" | chpasswd
-sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
-systemctl enable NetworkManager bluetooth || true
-systemctl disable getty@tty2.service || true
-systemctl enable ly.service || true
-systemctl enable ly@tty2.service || true
 
-# X11/Wayland Turkish Keyboard Layout
+# ── Hostname ──────────────────────────────────────────────────────────────────
+echo "{HOSTNAME}" > /etc/hostname
+cat > /etc/hosts << 'EOF'
+127.0.0.1   localhost
+::1         localhost
+127.0.1.1   {HOSTNAME}.localdomain {HOSTNAME}
+EOF
+
+# ── Users & sudo ──────────────────────────────────────────────────────────────
+useradd -m -G wheel,audio,video,storage -s /bin/bash "{self.username}"
+echo "{self.username}:{self.password}" | chpasswd
+echo "root:{self.password}"            | chpasswd
+sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+
+# ── Services ──────────────────────────────────────────────────────────────────
+systemctl enable NetworkManager bluetooth
+systemctl disable getty@tty2.service 2>/dev/null || true
+systemctl enable ly.service
+systemctl enable ly@tty2.service 2>/dev/null || true
+
+# ── X11 Turkish keyboard ──────────────────────────────────────────────────────
 mkdir -p /etc/X11/xorg.conf.d
-cat << 'EOF' > /etc/X11/xorg.conf.d/00-keyboard.conf
+cat > /etc/X11/xorg.conf.d/00-keyboard.conf << 'EOF'
 Section "InputClass"
-        Identifier "system-keyboard"
-        MatchIsKeyboard "on"
-        Option "XkbLayout" "tr"
+    Identifier "system-keyboard"
+    MatchIsKeyboard "on"
+    Option "XkbLayout" "tr"
 EndSection
 EOF
 
-# AUR Helpers (yay)
-echo "{self.username} ALL=(ALL) NOPASSWD: /usr/bin/pacman" > /etc/sudoers.d/99-yay
-chmod 440 /etc/sudoers.d/99-yay
-runuser -u "{self.username}" -- /bin/bash -c "cd /tmp && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si --noconfirm"
-rm -f /etc/sudoers.d/99-yay
-
-# KDE Default Terminal & Shortcuts (Kitty)
-mkdir -p /home/{self.username}/.config
-cat << 'EOF' > /home/{self.username}/.config/kdeglobals
+# ── KDE: default terminal + Ctrl+Alt+T ───────────────────────────────────────
+CFG="/home/{self.username}/.config"
+mkdir -p "$CFG"
+cat > "$CFG/kdeglobals" << 'EOF'
 [General]
 TerminalApplication=kitty
 TerminalService=kitty.desktop
 EOF
-
-cat << 'EOF' > /home/{self.username}/.config/kglobalshortcutsrc
+cat > "$CFG/kglobalshortcutsrc" << 'EOF'
 [kitty.desktop]
 _k_friendly_name=kitty
 _launch=Ctrl+Alt+T,none,kitty
 EOF
-chown -R {self.username}:{self.username} /home/{self.username}/.config
+chown -R "{self.username}:{self.username}" "$CFG"
 
-# Bootloader deployment
-OPTS="root=UUID={self.root_uuid} rw"
+# ── AUR helper: yay ───────────────────────────────────────────────────────────
+echo "{self.username} ALL=(ALL) NOPASSWD: /usr/bin/pacman" > /etc/sudoers.d/99-yay
+chmod 440 /etc/sudoers.d/99-yay
+runuser -u "{self.username}" -- bash -c "
+    cd /tmp
+    git clone https://aur.archlinux.org/yay.git
+    cd yay && makepkg -si --noconfirm
+    rm -rf /tmp/yay
+"
+rm -f /etc/sudoers.d/99-yay
 
-if [[ "{self.bootloader}" == "systemd-boot" ]]; then
-    bootctl install
-    echo -e "default arch\\ntimeout 2\\neditor no" > /boot/loader/loader.conf
-    
-    UCODE=""
-    if [ -f /boot/intel-ucode.img ]; then UCODE="\\ninitrd /intel-ucode.img"; fi
-    
-    echo -e "title Arch Linux\\nlinux /vmlinuz-linux-cachyos$UCODE\\ninitrd /initramfs-linux-cachyos.img\\noptions $OPTS" > /boot/loader/entries/arch.conf
-else
-    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
-    grub-mkconfig -o /boot/grub/grub.cfg
-fi
+# ── NVIDIA ────────────────────────────────────────────────────────────────────
+{nvidia_block}
+
+# ── Bootloader ────────────────────────────────────────────────────────────────
+{bootloader_cmds}
 """
-        with open("/mnt/setup_config.sh", "w") as f: f.write(chroot_cmds)
-        
-        print(f"  {Colors.CYAN}{Symbol.INFO} Optimizing environment...{Colors.RESET}")
+
+        print(f"  {Sym.INFO}  Injecting CachyOS repos into target system…")
         self.setup_cachyos(target="/mnt")
-        self.run("arch-chroot /mnt /bin/bash /setup_config.sh")
-        self.run("rm -f /mnt/setup_config.sh", check=False)
-        self.progress_next("Environment optimized")
 
-    def finish(self):
-        self.current_step = TOTAL_STEPS
+        print(f"  {Sym.INFO}  Configuring system inside chroot…")
+        self.chroot_run(chroot_script)
+
+        note = " + NVIDIA" + (" PRIME" if self.has_igpu else "") if self.nvidia_gpu else ""
+        mode = " [dual-boot/GRUB]" if self.install_mode == "dualboot" else ""
+        self.tick(f"System configured{note}{mode}")
+
+    # ── Finish ───────────────────────────────────────────────────────────────
+
+    def step_finish(self) -> None:
+        self.step = TOTAL_STEPS
         self.render()
-        typewriter_print(f"\n  {Colors.GREEN}{Colors.BOLD}DEPLOYMENT SUCCESSFUL.{Colors.RESET}", 0.05)
-        
-        # --- Cleanup Section ---
-        print(f"\n  {Colors.BOLD}CLEANUP{Colors.RESET}")
-        ans = self.safe_input(f"  {Colors.CYAN}?{Colors.RESET} Delete log file ({LOG_FILE})? [Y/n]: ").strip().lower()
-        delete_logs = (ans != 'n')
+        typewriter(f"\n  {C.GREEN}{C.BOLD}INSTALLATION COMPLETE.{C.RESET}", 0.04)
 
-        with Spinner("Cleaning up temporary files and unmounting..."):
-            # Unmount everything safely
-            os.system("umount -l /var/cache/pacman/pkg 2>/dev/null")
-            os.system("umount -R /mnt 2>/dev/null")
-            
-            # Remove temporary waste files
-            waste_files = ["/tmp/cachy.sh", "/tmp/cachy_setup.sh", "/tmp/setup_config.sh"]
-            for f in waste_files:
-                if os.path.exists(f):
-                    try: os.remove(f)
-                    except: pass
-            
-            if os.path.exists("/tmp/cachyos-setup"):
-                shutil.rmtree("/tmp/cachyos-setup", ignore_errors=True)
+        if self.install_mode == "dualboot":
+            print(f"\n  {Sym.INFO}  {C.BOLD}Dual-boot tip:{C.RESET} On next boot, "
+                  f"GRUB will show both Arch Linux and Windows.")
+            print(f"         If Windows doesn't appear, boot into Arch and run:")
+            print(f"         {C.DIM}sudo os-prober && sudo grub-mkconfig -o /boot/grub/grub.cfg{C.RESET}")
 
-            # Optional log deletion
-            if delete_logs and os.path.exists(LOG_FILE):
-                try: os.remove(LOG_FILE)
-                except: pass
+        print(f"\n  {C.BOLD}CLEANUP{C.RESET}")
+        ans = self.prompt(
+            f"  {C.CYAN}?{C.RESET}  Delete install log ({LOG_FILE})? [Y/n]: "
+        ).strip().lower()
+        keep_log = (ans == "n")
 
-            # Self-destruct (Remove the installer script itself)
+        with Spinner("Unmounting and cleaning up…"):
+            os.system("umount -l /var/cache/pacman/pkg 2>/dev/null || true")
+            os.system("umount -R /mnt 2>/dev/null || true")
+            os.system("swapoff -a 2>/dev/null || true")
+            if not keep_log and LOG_FILE.exists():
+                LOG_FILE.unlink(missing_ok=True)
             try:
-                os.remove(sys.argv[0])
-            except:
+                Path(sys.argv[0]).unlink()
+            except Exception:
                 pass
 
-        print(f"  {Colors.GREEN}{Symbol.SUCCESS}{Colors.RESET} Cleanup complete. System is lean.")
-        
-        print(f"\n  {Colors.YELLOW}!{Colors.RESET} Remove installation media now.")
-        for i in range(5, 0, -1):
-            sys.stdout.write(f"\r  {Colors.CYAN}{Symbol.INFO}{Colors.RESET} Rebooting in {i} seconds... ")
-            sys.stdout.flush()
-            time.sleep(1)
-        
+        print(f"  {Sym.OK}  All clean.")
+        print(f"\n  {C.YELLOW}⚠{C.RESET}  Remove installation media, then press Enter to reboot.")
+        try:
+            self.prompt("")
+        except Exception:
+            pass
+
         os.system("tput cnorm")
-        print(f"\n  {Colors.GREEN}Rebooting...{Colors.RESET}")
+        print(f"\n  {C.GREEN}Rebooting…{C.RESET}")
         os.system("reboot")
 
-def signal_handler(sig, frame):
-    print(f"\n\n  {Colors.RED}Process interrupted. Cleaning up...{Colors.RESET}")
+    # ── Orchestrator ─────────────────────────────────────────────────────────
+
+    def step_welcome(self) -> None:
+        os.system("tput civis")
+        self.render()
+        typewriter("  Welcome to the installer…", color=C.CYAN)
+        time.sleep(0.5)
+
+        self._check_uefi()
+        self._check_internet()
+        self._check_nvidia()
+
+        print(f"\n  {C.BOLD}USER CONFIGURATION{C.RESET}")
+
+        # ── Username — Linux-valid regex, not Python isidentifier ────────────
+        while True:
+            self.username = self.prompt(f"  {C.CYAN}› Username:{C.RESET} ").strip()
+            if USERNAME_RE.match(self.username):
+                break
+            print(f"  {Sym.WARN}  Invalid username. "
+                  f"Use lowercase letters, digits, underscore or hyphen; "
+                  f"must start with a letter or underscore.")
+
+        while True:
+            os.system("tput cnorm")
+            pw1 = getpass.getpass(f"  {C.CYAN}› Password:{C.RESET} ")
+            pw2 = getpass.getpass(f"  {C.CYAN}› Confirm password:{C.RESET} ")
+            if pw1 and pw1 == pw2:
+                self.password = pw1
+                break
+            print(f"  {Sym.WARN}  Passwords don't match — try again.")
+
+        # Bootloader choice only relevant for clean installs
+        # (dual-boot forces GRUB, set in _select_dualboot)
+        print(f"\n  {C.BOLD}BOOTLOADER{C.RESET}  {C.DIM}(dual-boot always uses GRUB){C.RESET}")
+        print(f"  {C.DIM}1) systemd-boot  (recommended for single-boot){C.RESET}")
+        print(f"  {C.DIM}2) GRUB{C.RESET}")
+        choice = self.prompt(f"  {C.CYAN}› Select [1/2] (default 1):{C.RESET} ").strip()
+        self.bootloader = "grub" if choice == "2" else "systemd-boot"
+
+        self.in_progress = True
+
+    def run_all(self) -> None:
+        self.step_welcome()
+        self.step_detect_disk()
+        self.step_partition()
+        self.step_mount()          # now its own tick step
+        self.step_install_base()
+        self.step_configure()
+        self.step_finish()
+
+
+# ─── Signal & entry ────────────────────────────────────────────────────────────
+
+def _on_sigint(sig, frame):
+    print(f"\n\n  {C.YELLOW}Interrupted — cleaning up…{C.RESET}")
     subprocess.run("umount -R /mnt 2>/dev/null", shell=True)
+    subprocess.run("swapoff -a 2>/dev/null", shell=True)
     os.system("tput cnorm")
     sys.exit(0)
 
-def main():
-    signal.signal(signal.SIGINT, signal_handler)
+
+def main() -> None:
+    signal.signal(signal.SIGINT, _on_sigint)
     installer = Installer()
     try:
-        installer.welcome()
-        installer.detect_disk()
-        installer.partition_and_format()
-        installer.install_base()
-        installer.configure()
-        installer.finish()
-    except Exception as e:
-        installer.on_error(str(e))
+        installer.run_all()
+    except InstallError as exc:
+        installer.abort(str(exc))
+        sys.exit(1)
+    except Exception as exc:
+        installer.abort(f"Unexpected error: {exc}")
+        log.exception("Unhandled exception")
+        sys.exit(1)
     finally:
         os.system("tput cnorm")
+
 
 if __name__ == "__main__":
     main()
