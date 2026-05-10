@@ -38,15 +38,19 @@ class Sym:
     FAIL    = f"{C.RED}[ FAIL ]{C.RESET}"
     INFO    = f"{C.CYAN}[ INFO ]{C.RESET}"
     WARN    = f"{C.YELLOW}[ WARN ]{C.RESET}"
-    SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    SPINNER = ["|", "/", "-", "\\"]
 
-HEADER = r"""
-  _____ _
- | _ |___ ___| |_ ___ _ _ ___ ___
- | | _| _| | . | | | -_| |
- |__|__|_| |___|_|_|_ |___|___|_|_|
-                  |_|
-"""
+HEADER = (
+    "\n"
+    "  ███╗   ██╗███████╗███╗   ██╗\n"
+    "  ████╗  ██║██╔════╝████╗  ██║\n"
+    "  ██╔██╗ ██║█████╗  ██╔██╗ ██║\n"
+    "  ██║╚██╗██║██╔══╝  ██║╚██╗██║\n"
+    "  ██║ ╚████║███████╗██║ ╚████║\n"
+    "  ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═══╝\n"
+    "\n"
+    "     Nen's personal Arch installer\n"
+)
 
 # ─── Configuration ─────────────────────────────────────────────────────────────
 
@@ -244,7 +248,7 @@ class Installer:
         sys.stdout.write(C.CLEAR)
         for line in HEADER.strip("\n").splitlines():
             print(f"  {C.LILAC}{line}{C.RESET}")
-        print(f"  {C.DIM}Nen's personal Arch installer — CachyOS edition{C.RESET}\n")
+        print()
 
     def render(self) -> None:
         self._header()
@@ -291,7 +295,10 @@ cd cachyos-repo
 set +e
 yes | ./cachyos-repo.sh
 set -e
-command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || pacman -Syy
+# Rate-mirror or plain refresh — both are best-effort; db sync happens in
+# step_install_base with an explicit --cachedir pointing to /mnt so we never
+# overflow the live ISO tmpfs here.
+command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
 """
 
     def setup_cachyos(self, target: Optional[str] = None) -> None:
@@ -301,10 +308,24 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || pacman -S
             if target:
                 self.chroot_run(script)
             else:
+                # Grow the live tmpfs so repo scripts have room to work
                 os.system("mount -o remount,size=75% / 2>/dev/null || true")
+
+                # Redirect pacman's db + cache to /mnt so writes never hit the
+                # tiny live-ISO tmpfs (that causes "Failure writing output" errors)
                 Path("/mnt/var/cache/pacman/pkg").mkdir(parents=True, exist_ok=True)
-                self.run("mount --bind /mnt/var/cache/pacman/pkg /var/cache/pacman/pkg",
-                         check=False)
+                Path("/mnt/var/lib/pacman").mkdir(parents=True, exist_ok=True)
+
+                # Bind-mount both dirs so pacman on the live host writes to /mnt
+                self.run(
+                    "mount --bind /mnt/var/cache/pacman/pkg /var/cache/pacman/pkg",
+                    check=False,
+                )
+                self.run(
+                    "mount --bind /mnt/var/lib/pacman /var/lib/pacman",
+                    check=False,
+                )
+
                 with tempfile.NamedTemporaryFile("w", suffix=".sh", delete=False) as f:
                     f.write(script)
                     tmp_path = f.name
@@ -841,12 +862,16 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || pacman -S
     def step_install_base(self) -> None:
         self.setup_cachyos()
 
+        # All pacman calls on the live host use /mnt paths so db/pkg writes
+        # never overflow the live-ISO tmpfs.
+        PM = "pacman --dbpath /mnt/var/lib/pacman --cachedir /mnt/var/cache/pacman/pkg"
+
         with Spinner("Refreshing keyrings…"):
-            self.run("pacman -Sy --noconfirm archlinux-keyring", check=False)
+            self.run(f"{PM} -Sy --noconfirm archlinux-keyring", check=False)
         self.tick("Keyrings updated")
 
         with Spinner("Syncing package databases…"):
-            self.run("pacman -Sy")
+            self.run(f"{PM} -Sy")
         self.tick("Repositories synced")
 
         pkgs = list(BASE_PACKAGES)
@@ -864,7 +889,8 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || pacman -S
             valid = [
                 p for p in pkgs
                 if subprocess.run(
-                    f"pacman -Si {p}", shell=True, capture_output=True
+                    f"pacman --dbpath /mnt/var/lib/pacman -Si {p}",
+                    shell=True, capture_output=True
                 ).returncode == 0
             ]
             skipped = set(pkgs) - set(valid)
