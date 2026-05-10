@@ -193,6 +193,8 @@ class Installer:
         self.win_efi_part  = ""
         self.free_start    = 0    # int, not str
         self.free_end      = 0    # int, not str
+        # DiskInfo holding Windows; used to collect NTFS parts for os-prober
+        self._win_disk_obj = None
 
     # ── Shell helpers ────────────────────────────────────────────────────────
 
@@ -677,6 +679,7 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || pacman -S
         self.disk       = chosen_disk.name
         self.free_start = chosen_free._free_start   # int
         self.free_end   = chosen_free._free_end     # int
+        self._win_disk_obj = chosen_disk
 
         self.win_efi_part = self._find_efi_partition(chosen_disk)
         if self.win_efi_part:
@@ -972,15 +975,51 @@ printf 'title   Arch Linux (CachyOS)\\nlinux   /vmlinuz-linux-cachyos%s\\ninitrd
 """
         else:
             # GRUB — EFI is mounted at /boot/efi
-            # arch-chroot already has /dev /proc /sys bound, so os-prober works.
-            bootloader_cmds = """
-grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+            # os-prober needs to see the Windows partition from inside the chroot.
+            # We pre-mount Windows NTFS partitions under /mnt/windows_probe before
+            # entering the chroot, and pass their paths via /etc/os-prober-mounts.
+            # The chroot script reads that file and mounts them before running
+            # grub-mkconfig, then cleans up.
+            #
+            # GRUB_DISABLE_OS_PROBER: Arch's default /etc/default/grub may not have
+            # this key at all (not even commented out), so we use grep+append instead
+            # of sed to be safe.
+            bootloader_cmds = f"""
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck
 
-# Enable os-prober so GRUB detects Windows automatically
-sed -i 's/^#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/' /etc/default/grub
+# ── /etc/default/grub — os-prober + timeout ──────────────────────────────────
+# Remove any existing GRUB_DISABLE_OS_PROBER line (commented or not) then add it
+sed -i '/GRUB_DISABLE_OS_PROBER/d' /etc/default/grub
+echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub
+
+# Set timeout so the user can actually choose their OS
 sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=10/' /etc/default/grub
+grep -q '^GRUB_TIMEOUT=' /etc/default/grub || echo 'GRUB_TIMEOUT=10' >> /etc/default/grub
+
+# ── Probe for Windows and other OSes ─────────────────────────────────────────
+# Mount any NTFS partitions from the probe list so os-prober can find Windows.
+PROBE_LIST="/etc/nen-probe-mounts"
+if [ -f "$PROBE_LIST" ]; then
+    while IFS= read -r dev; do
+        mp="/mnt/probe_$(basename "$dev")"
+        mkdir -p "$mp"
+        mount -o ro,noatime "$dev" "$mp" 2>/dev/null || true
+    done < "$PROBE_LIST"
+fi
+
+os-prober  # dry-run so it populates its cache
 
 grub-mkconfig -o /boot/grub/grub.cfg
+
+# ── Cleanup probe mounts ──────────────────────────────────────────────────────
+if [ -f "$PROBE_LIST" ]; then
+    while IFS= read -r dev; do
+        mp="/mnt/probe_$(basename "$dev")"
+        umount "$mp" 2>/dev/null || true
+        rmdir  "$mp" 2>/dev/null || true
+    done < "$PROBE_LIST"
+    rm -f "$PROBE_LIST"
+fi
 """
 
         nvidia_block = self._build_nvidia_chroot_block()
@@ -1061,6 +1100,23 @@ rm -f /etc/sudoers.d/99-yay
 
         print(f"  {Sym.INFO}  Injecting CachyOS repos into target system…")
         self.setup_cachyos(target="/mnt")
+
+        # ── For GRUB dual-boot: tell the chroot which NTFS partitions to probe ──
+        # os-prober needs to be able to mount the Windows partition from *inside*
+        # the chroot.  We write the device list to a file that the chroot script
+        # reads, mounts temporarily, runs grub-mkconfig, then cleans up.
+        if self.bootloader == "grub" and self._win_disk_obj is not None:
+            ntfs_parts = [
+                p.name for p in self._win_disk_obj.partitions
+                if not p.is_free and p.fs_type in ("ntfs", "exfat") and p.name
+            ]
+            if ntfs_parts:
+                probe_file = Path("/mnt/etc/nen-probe-mounts")
+                probe_file.write_text("\n".join(ntfs_parts) + "\n")
+                log.info("os-prober probe list: %s", ntfs_parts)
+                print(f"  {Sym.INFO}  Registered {len(ntfs_parts)} Windows partition(s) "
+                      f"for GRUB os-prober: "
+                      f"{C.DIM}{', '.join(ntfs_parts)}{C.RESET}")
 
         print(f"  {Sym.INFO}  Configuring system inside chroot…")
         self.chroot_run(chroot_script)
