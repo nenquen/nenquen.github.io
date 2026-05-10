@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Nen's Arch Linux Installer — Optimized Edition
-CachyOS kernel · KDE Plasma · NVIDIA-aware · Dual-boot support
+Nen's Arch Linux Installer
 """
 
 import subprocess
