@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""
-Nen's Arch Linux Installer — Optimized Edition
-CachyOS kernel · KDE Plasma · NVIDIA-aware · Dual-boot support
-"""
 
 import subprocess
 import sys
@@ -325,21 +321,6 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
                 # Grow the live tmpfs so repo scripts have room to work
                 os.system("mount -o remount,size=75% / 2>/dev/null || true")
 
-                # If /mnt is mounted, we can redirect cache/db to save space
-                if os.path.ismount("/mnt"):
-                    Path("/mnt/var/cache/pacman/pkg").mkdir(parents=True, exist_ok=True)
-                    Path("/mnt/var/lib/pacman").mkdir(parents=True, exist_ok=True)
-
-                    # Bind-mount both dirs so pacman on the live host writes to /mnt
-                    self.run(
-                        "mount --bind /mnt/var/cache/pacman/pkg /var/cache/pacman/pkg",
-                        check=False,
-                    )
-                    self.run(
-                        "mount --bind /mnt/var/lib/pacman /var/lib/pacman",
-                        check=False,
-                    )
-
                 with tempfile.NamedTemporaryFile("w", suffix=".sh", delete=False) as f:
                     f.write(script)
                     tmp_path = f.name
@@ -356,7 +337,7 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
                 except Exception as e:
                     log.error(f"Failed to verify /etc/pacman.conf: {e}")
 
-                # After running the script, we MUST ensure the host's pacman is synced
+                # Sync host
                 self.run("pacman -Sy --noconfirm")
 
     # ── Pre-flight checks ────────────────────────────────────────────────────
@@ -944,12 +925,30 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
         # pacstrap must use the live host's pacman.conf (which now includes
         # CachyOS repos added by setup_cachyos) so it can find linux-cachyos.
         print(f"  {Sym.INFO}  Installing {len(valid)} packages via pacstrap…")
-        # We don't need -C here if we already modified /etc/pacman.conf, 
-        # but being explicit is safer.
-        self.run(
-            f"pacstrap -C /etc/pacman.conf /mnt {' '.join(valid)}"
-        )
-        self.tick("Base system installed")
+        print(f"         {C.DIM}This may take a few minutes. Check progress below.{C.RESET}\n")
+        
+        # We run pacstrap with direct stdout to ensure the user can see if something fails
+        try:
+            subprocess.run(
+                f"pacstrap -C /etc/pacman.conf /mnt {' '.join(valid)}",
+                shell=True, check=True
+            )
+        except subprocess.CalledProcessError as e:
+            raise InstallError(f"Pacstrap failed with code {e.returncode}")
+
+        # ── VERIFY KERNEL ─────────────────────────────────────────────────────
+        with Spinner("Verifying kernel installation…"):
+            kernel_path = Path("/mnt/boot/vmlinuz-linux-cachyos")
+            if not kernel_path.exists():
+                # Check if it was named differently (unlikely for cachyos)
+                alt_kernel = list(Path("/mnt/boot").glob("vmlinuz*"))
+                raise InstallError(
+                    f"KERNEL NOT FOUND at {kernel_path}!\n"
+                    f"Found in /boot: {[p.name for p in alt_kernel]}\n"
+                    "The installation failed to place the kernel correctly."
+                )
+        
+        self.tick("Base system installed and verified")
 
     # ── NVIDIA chroot block ───────────────────────────────────────────────────
 
@@ -1075,6 +1074,9 @@ cat > /etc/grub.d/09_custom << GRUBEOF
 #!/bin/sh
 exec tail -n +3 \$0
 menuentry "Arch Linux (CachyOS kernel)" --class arch --class gnu-linux --class gnu --class os {{
+    insmod btrfs
+    insmod part_gpt
+    insmod fat
     search --no-floppy --fs-uuid --set=root $ROOT_UUID
     linux /boot/vmlinuz-linux-cachyos root=UUID=$ROOT_UUID rw quiet splash
     $UCODE
