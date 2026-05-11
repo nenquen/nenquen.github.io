@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""
-Nen's Arch Linux Installer — Optimized Edition
-CachyOS kernel · KDE Plasma · NVIDIA-aware · Dual-boot support
-"""
 
 import subprocess
 import sys
@@ -41,17 +37,7 @@ class Sym:
     WARN    = f"{C.YELLOW}[ WARN ]{C.RESET}"
     SPINNER = ["|", "/", "-", "\\"]
 
-HEADER = (
-    "\n"
-    "  ███╗   ██╗███████╗███╗   ██╗\n"
-    "  ████╗  ██║██╔════╝████╗  ██║\n"
-    "  ██╔██╗ ██║█████╗  ██╔██╗ ██║\n"
-    "  ██║╚██╗██║██╔══╝  ██║╚██╗██║\n"
-    "  ██║ ╚████║███████╗██║ ╚████║\n"
-    "  ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═══╝\n"
-    "\n"
-    "     Nen's personal Arch installer\n"
-)
+# ASCII HEADER REMOVED AS REQUESTED
 
 # ─── Configuration ─────────────────────────────────────────────────────────────
 
@@ -269,8 +255,7 @@ class Installer:
 
     def _header(self) -> None:
         sys.stdout.write(C.CLEAR)
-        for line in HEADER.strip("\n").splitlines():
-            print(f"  {C.LILAC}{line}{C.RESET}")
+        print(f"\n  {C.LILAC}{C.BOLD}Nen's Arch Linux Installer — Optimized Edition{C.RESET}")
         print()
 
     def render(self) -> None:
@@ -318,9 +303,8 @@ cd cachyos-repo
 set +e
 yes | ./cachyos-repo.sh
 set -e
-# Rate-mirror or plain refresh — both are best-effort; db sync happens in
-# step_install_base with an explicit --cachedir pointing to /mnt so we never
-# overflow the live ISO tmpfs here.
+# Syncing is crucial after adding the repo
+pacman -Sy --noconfirm
 command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
 """
 
@@ -331,23 +315,27 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
             if target:
                 self.chroot_run(script)
             else:
+                # If target is None, we are on the live host.
+                # We need to make sure pacman on the live host can see the new repos.
+                # The cachyos-repo.sh script modifies /etc/pacman.conf.
+                
                 # Grow the live tmpfs so repo scripts have room to work
                 os.system("mount -o remount,size=75% / 2>/dev/null || true")
 
-                # Redirect pacman's db + cache to /mnt so writes never hit the
-                # tiny live-ISO tmpfs (that causes "Failure writing output" errors)
-                Path("/mnt/var/cache/pacman/pkg").mkdir(parents=True, exist_ok=True)
-                Path("/mnt/var/lib/pacman").mkdir(parents=True, exist_ok=True)
+                # If /mnt is mounted, we can redirect cache/db to save space
+                if os.path.ismount("/mnt"):
+                    Path("/mnt/var/cache/pacman/pkg").mkdir(parents=True, exist_ok=True)
+                    Path("/mnt/var/lib/pacman").mkdir(parents=True, exist_ok=True)
 
-                # Bind-mount both dirs so pacman on the live host writes to /mnt
-                self.run(
-                    "mount --bind /mnt/var/cache/pacman/pkg /var/cache/pacman/pkg",
-                    check=False,
-                )
-                self.run(
-                    "mount --bind /mnt/var/lib/pacman /var/lib/pacman",
-                    check=False,
-                )
+                    # Bind-mount both dirs so pacman on the live host writes to /mnt
+                    self.run(
+                        "mount --bind /mnt/var/cache/pacman/pkg /var/cache/pacman/pkg",
+                        check=False,
+                    )
+                    self.run(
+                        "mount --bind /mnt/var/lib/pacman /var/lib/pacman",
+                        check=False,
+                    )
 
                 with tempfile.NamedTemporaryFile("w", suffix=".sh", delete=False) as f:
                     f.write(script)
@@ -356,6 +344,9 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
                     self.run(f"bash {tmp_path}")
                 finally:
                     Path(tmp_path).unlink(missing_ok=True)
+                
+                # After running the script, we MUST ensure the host's pacman is synced
+                self.run("pacman -Sy --noconfirm")
 
     # ── Pre-flight checks ────────────────────────────────────────────────────
 
@@ -880,11 +871,13 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
     # ── Base install ─────────────────────────────────────────────────────────
 
     def step_install_base(self) -> None:
+        # First, ensure repositories are set up on the LIVE host.
+        # This is critical so that 'pacstrap' and 'pacman -Si' can find CachyOS packages.
         self.setup_cachyos()
 
-        # All pacman calls on the live host use /mnt paths so db/pkg writes
-        # never overflow the live-ISO tmpfs.
-        # --config ensures CachyOS repos (added by cachyos-repo.sh) are visible.
+        # We use a custom PM command for validation on the live host.
+        # It MUST use the host's /etc/pacman.conf (which setup_cachyos modified).
+        # We also point it to /mnt for DB and Cache to avoid tmpfs overflow.
         PM = ("pacman --config /etc/pacman.conf "
               "--dbpath /mnt/var/lib/pacman "
               "--cachedir /mnt/var/cache/pacman/pkg")
@@ -894,6 +887,7 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
         self.tick("Keyrings updated")
 
         with Spinner("Syncing package databases…"):
+            # This syncs the databases at /mnt/var/lib/pacman
             self.run(f"{PM} -Sy")
         self.tick("Repositories synced")
 
@@ -909,25 +903,29 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
                 pkgs.append("nvidia-prime")
 
         with Spinner("Validating package list…"):
-            valid = [
-                p for p in pkgs
-                if subprocess.run(
-                    f"pacman --config /etc/pacman.conf "
-                    f"--dbpath /mnt/var/lib/pacman -Si {p}",
+            # Validate packages using the databases we just synced
+            valid = []
+            skipped = []
+            for p in pkgs:
+                r = subprocess.run(
+                    f"{PM} -Si {p}",
                     shell=True, capture_output=True
-                ).returncode == 0
-            ]
-            skipped = set(pkgs) - set(valid)
-            for p in skipped:
-                log.warning("Package not found, skipping: %s", p)
+                )
+                if r.returncode == 0:
+                    valid.append(p)
+                else:
+                    skipped.append(p)
+                    log.warning("Package not found, skipping: %s", p)
 
         if skipped:
             print(f"  {Sym.WARN}  Skipped {len(skipped)} unavailable package(s): "
                   f"{C.DIM}{', '.join(sorted(skipped))}{C.RESET}")
 
         # pacstrap must use the live host's pacman.conf (which now includes
-        # CachyOS repos added by cachyos-repo.sh) so it can find linux-cachyos.
+        # CachyOS repos added by setup_cachyos) so it can find linux-cachyos.
         print(f"  {Sym.INFO}  Installing {len(valid)} packages via pacstrap…")
+        # We don't need -C here if we already modified /etc/pacman.conf, 
+        # but being explicit is safer.
         self.run(
             f"pacstrap -C /etc/pacman.conf /mnt {' '.join(valid)}"
         )
@@ -1034,10 +1032,6 @@ printf 'title   Arch Linux (CachyOS)\\nlinux   /vmlinuz-linux-cachyos%s\\ninitrd
             # entering the chroot, and pass their paths via /etc/os-prober-mounts.
             # The chroot script reads that file and mounts them before running
             # grub-mkconfig, then cleans up.
-            #
-            # GRUB_DISABLE_OS_PROBER: Arch's default /etc/default/grub may not have
-            # this key at all (not even commented out), so we use grep+append instead
-            # of sed to be safe.
             bootloader_cmds = f"""
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck
 
@@ -1053,8 +1047,6 @@ sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/' /etc/default/grub
 grep -q '^GRUB_TIMEOUT_STYLE=' /etc/default/grub || echo 'GRUB_TIMEOUT_STYLE=menu' >> /etc/default/grub
 
 # ── Explicit custom entry for linux-cachyos ───────────────────────────────────
-# grub-mkconfig's 10_linux script may not detect the CachyOS kernel filename,
-# so we add a guaranteed entry via 40_custom.
 ROOT_UUID=$(blkid -s UUID -o value {self.p_root})
 UCODE=""
 [ -f /boot/intel-ucode.img ] && UCODE="initrd /intel-ucode.img"
@@ -1123,8 +1115,6 @@ sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 
 # ── Services ──────────────────────────────────────────────────────────────────
 systemctl enable NetworkManager bluetooth
-# ly runs as a template service on a specific TTY.
-# Disable getty on that TTY first, then enable ly there.
 systemctl disable getty@tty2.service 2>/dev/null || true
 systemctl enable ly@tty2.service
 
@@ -1172,12 +1162,9 @@ rm -f /etc/sudoers.d/99-yay
 """
 
         print(f"  {Sym.INFO}  Injecting CachyOS repos into target system…")
+        # Ensure CachyOS repos are also injected into the target CHROOT
         self.setup_cachyos(target="/mnt")
 
-        # ── For GRUB dual-boot: tell the chroot which NTFS partitions to probe ──
-        # os-prober needs to be able to mount the Windows partition from *inside*
-        # the chroot.  We write the device list to a file that the chroot script
-        # reads, mounts temporarily, runs grub-mkconfig, then cleans up.
         if self.bootloader == "grub" and self._win_disk_obj is not None:
             ntfs_parts = [
                 p.name for p in self._win_disk_obj.partitions
@@ -1251,7 +1238,6 @@ rm -f /etc/sudoers.d/99-yay
 
         print(f"\n  {C.BOLD}USER CONFIGURATION{C.RESET}")
 
-        # ── Username — Linux-valid regex, not Python isidentifier ────────────
         while True:
             self.username = self.prompt(f"  {C.CYAN}› Username:{C.RESET} ").strip()
             if USERNAME_RE.match(self.username):
@@ -1269,8 +1255,6 @@ rm -f /etc/sudoers.d/99-yay
                 break
             print(f"  {Sym.WARN}  Passwords don't match — try again.")
 
-        # Bootloader choice only relevant for clean installs
-        # (dual-boot forces GRUB, set in _select_dualboot)
         print(f"\n  {C.BOLD}BOOTLOADER{C.RESET}  {C.DIM}(dual-boot always uses GRUB){C.RESET}")
         print(f"  {C.DIM}1) systemd-boot  (recommended for single-boot){C.RESET}")
         print(f"  {C.DIM}2) GRUB{C.RESET}")
@@ -1283,7 +1267,7 @@ rm -f /etc/sudoers.d/99-yay
         self.step_welcome()
         self.step_detect_disk()
         self.step_partition()
-        self.step_mount()          # now its own tick step
+        self.step_mount()
         self.step_install_base()
         self.step_configure()
         self.step_finish()
