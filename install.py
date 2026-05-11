@@ -294,47 +294,44 @@ class Installer:
     def setup_cachyos(self, target: Optional[str] = None) -> None:
         """
         Manually inject CachyOS repositories and keys.
-        This is more reliable than running the CachyOS script on the live host,
-        which can crash due to resource limits (SIGBUS/Exit 135).
+        Uses SigLevel = Optional TrustAll for bootstrap to avoid GPG errors on live ISO.
         """
         prefix = target if target else ""
         conf_path = Path(f"{prefix}/etc/pacman.conf")
         label = f"into {target}" if target else "on live host"
 
         with Spinner(f"Injecting CachyOS repositories {label}…"):
-            # 1. Add Keys
-            if not target:
-                # On live host
-                self.run("pacman-key --recv-keys F3B607488DB35C47", check=False)
-                self.run("pacman-key --lsign-key F3B607488DB35C47", check=False)
-                # Also install the keyring package directly if possible
-                self.run("pacman -Sy --noconfirm cachyos-keyring", check=False)
-            else:
-                # Inside chroot
-                self.chroot_run("pacman-key --recv-keys F3B607488DB35C47")
-                self.chroot_run("pacman-key --lsign-key F3B607488DB35C47")
-                self.chroot_run("pacman -Sy --noconfirm cachyos-keyring")
-
-            # 2. Add to pacman.conf
+            # 1. Add to pacman.conf FIRST
             try:
                 conf = conf_path.read_text()
                 if "[cachyos]" not in conf:
-                    # We add the base cachyos and extra repos. 
-                    # v3 detection is handled by the cachyos-mirrorlist package later,
-                    # but for bootstrap we use the generic ones.
-                    repo_block = "\n[cachyos]\nServer = https://mirror.cachyos.org/repo/x86_64/cachyos\n"
-                    repo_block += "[cachyos-extra]\nServer = https://mirror.cachyos.org/repo/x86_64/cachyos-extra\n"
+                    # We use SigLevel = Optional TrustAll to bypass GPG issues during initial sync
+                    repo_block = "\n[cachyos]\nSigLevel = Optional TrustAll\nServer = https://mirror.cachyos.org/repo/x86_64/cachyos\n"
+                    repo_block += "[cachyos-extra]\nSigLevel = Optional TrustAll\nServer = https://mirror.cachyos.org/repo/x86_64/cachyos-extra\n"
                     
                     with conf_path.open("a") as f:
                         f.write(repo_block)
             except Exception as e:
                 log.error(f"Failed to modify pacman.conf: {e}")
 
-            # 3. Sync
+            # 2. Sync databases
             if not target:
                 self.run("pacman -Sy --noconfirm")
             else:
                 self.chroot_run("pacman -Sy --noconfirm")
+
+            # 3. Add Keys and Keyring properly
+            fingerprint = "882DCFE48E2051D48E2562ABF3B607488DB35A47"
+            if not target:
+                # On live host
+                self.run(f"pacman-key --recv-keys {fingerprint}", check=False)
+                self.run(f"pacman-key --lsign-key {fingerprint}", check=False)
+                self.run("pacman -S --noconfirm cachyos-keyring", check=False)
+            else:
+                # Inside chroot
+                self.chroot_run(f"pacman-key --recv-keys {fingerprint} || true")
+                self.chroot_run(f"pacman-key --lsign-key {fingerprint} || true")
+                self.chroot_run("pacman -S --noconfirm cachyos-keyring")
 
     # ── Pre-flight checks ────────────────────────────────────────────────────
 
