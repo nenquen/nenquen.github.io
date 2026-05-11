@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Nen's Arch Linux Installer
+Nen's Arch Linux Installer — Optimized Edition
+CachyOS kernel · KDE Plasma · NVIDIA-aware · Dual-boot support
 """
 
 import subprocess
@@ -883,7 +884,10 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
 
         # All pacman calls on the live host use /mnt paths so db/pkg writes
         # never overflow the live-ISO tmpfs.
-        PM = "pacman --dbpath /mnt/var/lib/pacman --cachedir /mnt/var/cache/pacman/pkg"
+        # --config ensures CachyOS repos (added by cachyos-repo.sh) are visible.
+        PM = ("pacman --config /etc/pacman.conf "
+              "--dbpath /mnt/var/lib/pacman "
+              "--cachedir /mnt/var/cache/pacman/pkg")
 
         with Spinner("Refreshing keyrings…"):
             self.run(f"{PM} -Sy --noconfirm archlinux-keyring", check=False)
@@ -908,7 +912,8 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
             valid = [
                 p for p in pkgs
                 if subprocess.run(
-                    f"pacman --dbpath /mnt/var/lib/pacman -Si {p}",
+                    f"pacman --config /etc/pacman.conf "
+                    f"--dbpath /mnt/var/lib/pacman -Si {p}",
                     shell=True, capture_output=True
                 ).returncode == 0
             ]
@@ -920,8 +925,12 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
             print(f"  {Sym.WARN}  Skipped {len(skipped)} unavailable package(s): "
                   f"{C.DIM}{', '.join(sorted(skipped))}{C.RESET}")
 
+        # pacstrap must use the live host's pacman.conf (which now includes
+        # CachyOS repos added by cachyos-repo.sh) so it can find linux-cachyos.
         print(f"  {Sym.INFO}  Installing {len(valid)} packages via pacstrap…")
-        self.run(f"pacstrap /mnt {' '.join(valid)}")
+        self.run(
+            f"pacstrap -C /etc/pacman.conf /mnt {' '.join(valid)}"
+        )
         self.tick("Base system installed")
 
     # ── NVIDIA chroot block ───────────────────────────────────────────────────
@@ -1032,17 +1041,35 @@ printf 'title   Arch Linux (CachyOS)\\nlinux   /vmlinuz-linux-cachyos%s\\ninitrd
             bootloader_cmds = f"""
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck
 
-# ── /etc/default/grub — os-prober + timeout ──────────────────────────────────
-# Remove any existing GRUB_DISABLE_OS_PROBER line (commented or not) then add it
+# ── /etc/default/grub ────────────────────────────────────────────────────────
 sed -i '/GRUB_DISABLE_OS_PROBER/d' /etc/default/grub
 echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub
 
-# Set timeout so the user can actually choose their OS
 sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=10/' /etc/default/grub
 grep -q '^GRUB_TIMEOUT=' /etc/default/grub || echo 'GRUB_TIMEOUT=10' >> /etc/default/grub
 
-# ── Probe for Windows and other OSes ─────────────────────────────────────────
-# Mount any NTFS partitions from the probe list so os-prober can find Windows.
+# Make sure GRUB shows the menu (not hidden)
+sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/' /etc/default/grub
+grep -q '^GRUB_TIMEOUT_STYLE=' /etc/default/grub || echo 'GRUB_TIMEOUT_STYLE=menu' >> /etc/default/grub
+
+# ── Explicit custom entry for linux-cachyos ───────────────────────────────────
+# grub-mkconfig's 10_linux script may not detect the CachyOS kernel filename,
+# so we add a guaranteed entry via 40_custom.
+ROOT_UUID=$(blkid -s UUID -o value {self.p_root})
+UCODE=""
+[ -f /boot/intel-ucode.img ] && UCODE="initrd /intel-ucode.img"
+
+mkdir -p /boot/grub
+cat >> /boot/grub/custom.cfg << GRUBEOF
+menuentry "Arch Linux (CachyOS kernel)" {{
+    search --no-floppy --fs-uuid --set=root $ROOT_UUID
+    linux /vmlinuz-linux-cachyos root=UUID=$ROOT_UUID rw quiet splash
+    $UCODE
+    initrd /initramfs-linux-cachyos.img
+}}
+GRUBEOF
+
+# ── Probe for Windows ─────────────────────────────────────────────────────────
 PROBE_LIST="/etc/nen-probe-mounts"
 if [ -f "$PROBE_LIST" ]; then
     while IFS= read -r dev; do
@@ -1052,7 +1079,7 @@ if [ -f "$PROBE_LIST" ]; then
     done < "$PROBE_LIST"
 fi
 
-os-prober  # dry-run so it populates its cache
+os-prober
 
 grub-mkconfig -o /boot/grub/grub.cfg
 
