@@ -294,23 +294,45 @@ class Installer:
     def setup_cachyos(self, target: Optional[str] = None) -> None:
         """
         Manually inject CachyOS repositories and keys.
-        Uses SigLevel = Optional TrustAll for bootstrap to avoid GPG errors on live ISO.
+        Uses SigLevel = Never for bootstrap to avoid GPG errors on live ISO.
         """
         prefix = target if target else ""
         conf_path = Path(f"{prefix}/etc/pacman.conf")
         label = f"into {target}" if target else "on live host"
 
         with Spinner(f"Injecting CachyOS repositories {label}…"):
-            # 1. Add to pacman.conf FIRST
+            # 0. Clean up any corrupted DBs from previous attempts
+            db_dir = f"{prefix}/var/lib/pacman/sync"
+            if os.path.isdir(db_dir):
+                for f in Path(db_dir).glob("cachyos*"):
+                    try: f.unlink()
+                    except: pass
+
+            # 1. Add to pacman.conf (Clean existing first to avoid duplicates)
             try:
-                conf = conf_path.read_text()
-                if "[cachyos]" not in conf:
-                    # We use SigLevel = Optional TrustAll to bypass GPG issues during initial sync
-                    repo_block = "\n[cachyos]\nSigLevel = Optional TrustAll\nServer = https://mirror.cachyos.org/repo/x86_64/cachyos\n"
-                    repo_block += "[cachyos-extra]\nSigLevel = Optional TrustAll\nServer = https://mirror.cachyos.org/repo/x86_64/cachyos-extra\n"
-                    
-                    with conf_path.open("a") as f:
-                        f.write(repo_block)
+                lines = conf_path.read_text().splitlines()
+                new_lines = []
+                skip = False
+                for line in lines:
+                    if line.strip() in ["[cachyos]", "[cachyos-extra]", "[cachyos-v3]", "[cachyos-core-v3]"]:
+                        skip = True
+                    elif skip and line.startswith("["):
+                        skip = False
+                    if not skip:
+                        new_lines.append(line)
+                
+                repo_block = [
+                    "",
+                    "[cachyos]",
+                    "SigLevel = Never",
+                    "Server = https://mirror.cachyos.org/repo/x86_64/cachyos",
+                    "",
+                    "[cachyos-extra]",
+                    "SigLevel = Never",
+                    "Server = https://mirror.cachyos.org/repo/x86_64/cachyos-extra",
+                    ""
+                ]
+                conf_path.write_text("\n".join(new_lines + repo_block))
             except Exception as e:
                 log.error(f"Failed to modify pacman.conf: {e}")
 
@@ -320,7 +342,7 @@ class Installer:
             else:
                 self.chroot_run("pacman -Sy --noconfirm")
 
-            # 3. Add Keys and Keyring properly
+            # 3. Add Keys and Keyring properly for the FINAL system
             fingerprint = "882DCFE48E2051D48E2562ABF3B607488DB35A47"
             if not target:
                 # On live host
