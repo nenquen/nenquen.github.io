@@ -82,6 +82,7 @@ BASE_PACKAGES = [
     "noto-fonts", "noto-fonts-emoji", "ttf-jetbrains-mono-nerd",
     "sof-firmware", "alsa-ucm-conf",
     "bash-completion",
+    "xorg-xauth",   # required by ly for Xorg session support
 ]
 
 # Dual-boot: GRUB is mandatory (it can chain-load Windows; systemd-boot cannot)
@@ -1077,9 +1078,10 @@ sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 
 # ── Services ──────────────────────────────────────────────────────────────────
 systemctl enable NetworkManager bluetooth
+# ly runs as a template service on a specific TTY.
+# Disable getty on that TTY first, then enable ly there.
 systemctl disable getty@tty2.service 2>/dev/null || true
-systemctl enable ly.service
-systemctl enable ly@tty2.service 2>/dev/null || true
+systemctl enable ly@tty2.service
 
 # ── X11 Turkish keyboard ──────────────────────────────────────────────────────
 mkdir -p /etc/X11/xorg.conf.d
