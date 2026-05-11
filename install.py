@@ -291,54 +291,50 @@ class Installer:
 
     # ── CachyOS repo ─────────────────────────────────────────────────────────
 
-    def _cachyos_script(self) -> str:
-        return """set -euo pipefail
-tmpdir=$(mktemp -d)
-trap 'rm -rf "$tmpdir"' EXIT
-cd "$tmpdir"
-curl -sLO https://mirror.cachyos.org/cachyos-repo.tar.xz
-tar xf cachyos-repo.tar.xz
-cd cachyos-repo
-set +e
-yes | ./cachyos-repo.sh
-set -e
-# Syncing is crucial after adding the repo
-pacman -Sy --noconfirm
-command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
-"""
-
     def setup_cachyos(self, target: Optional[str] = None) -> None:
+        """
+        Manually inject CachyOS repositories and keys.
+        This is more reliable than running the CachyOS script on the live host,
+        which can crash due to resource limits (SIGBUS/Exit 135).
+        """
+        prefix = target if target else ""
+        conf_path = Path(f"{prefix}/etc/pacman.conf")
         label = f"into {target}" if target else "on live host"
+
         with Spinner(f"Injecting CachyOS repositories {label}…"):
-            script = self._cachyos_script()
-            if target:
-                self.chroot_run(script)
+            # 1. Add Keys
+            if not target:
+                # On live host
+                self.run("pacman-key --recv-keys F3B607488DB35C47", check=False)
+                self.run("pacman-key --lsign-key F3B607488DB35C47", check=False)
+                # Also install the keyring package directly if possible
+                self.run("pacman -Sy --noconfirm cachyos-keyring", check=False)
             else:
-                # If target is None, we are on the live host.
-                # We need to make sure pacman on the live host can see the new repos.
-                # The cachyos-repo.sh script modifies /etc/pacman.conf.
-                
-                # Grow the live tmpfs so repo scripts have room to work
-                os.system("mount -o remount,size=75% / 2>/dev/null || true")
+                # Inside chroot
+                self.chroot_run("pacman-key --recv-keys F3B607488DB35C47")
+                self.chroot_run("pacman-key --lsign-key F3B607488DB35C47")
+                self.chroot_run("pacman -Sy --noconfirm cachyos-keyring")
 
-                with tempfile.NamedTemporaryFile("w", suffix=".sh", delete=False) as f:
-                    f.write(script)
-                    tmp_path = f.name
-                try:
-                    self.run(f"bash {tmp_path}")
-                finally:
-                    Path(tmp_path).unlink(missing_ok=True)
-                
-                # Verify repo was added
-                try:
-                    conf_content = Path("/etc/pacman.conf").read_text()
-                    if "[cachyos]" not in conf_content:
-                        log.warning("CachyOS repository header [cachyos] not found in /etc/pacman.conf")
-                except Exception as e:
-                    log.error(f"Failed to verify /etc/pacman.conf: {e}")
+            # 2. Add to pacman.conf
+            try:
+                conf = conf_path.read_text()
+                if "[cachyos]" not in conf:
+                    # We add the base cachyos and extra repos. 
+                    # v3 detection is handled by the cachyos-mirrorlist package later,
+                    # but for bootstrap we use the generic ones.
+                    repo_block = "\n[cachyos]\nServer = https://mirror.cachyos.org/repo/x86_64/cachyos\n"
+                    repo_block += "[cachyos-extra]\nServer = https://mirror.cachyos.org/repo/x86_64/cachyos-extra\n"
+                    
+                    with conf_path.open("a") as f:
+                        f.write(repo_block)
+            except Exception as e:
+                log.error(f"Failed to modify pacman.conf: {e}")
 
-                # Sync host
+            # 3. Sync
+            if not target:
                 self.run("pacman -Sy --noconfirm")
+            else:
+                self.chroot_run("pacman -Sy --noconfirm")
 
     # ── Pre-flight checks ────────────────────────────────────────────────────
 
