@@ -1084,30 +1084,6 @@ grep -q '^GRUB_TIMEOUT=' /etc/default/grub || echo 'GRUB_TIMEOUT=10' >> /etc/def
 sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/' /etc/default/grub
 grep -q '^GRUB_TIMEOUT_STYLE=' /etc/default/grub || echo 'GRUB_TIMEOUT_STYLE=menu' >> /etc/default/grub
 
-# ── Explicit custom entry for linux-cachyos at the TOP ───────────────────────
-ROOT_UUID=$(blkid -s UUID -o value {self.p_root})
-UCODE=""
-[ -f /boot/intel-ucode.img ] && UCODE="initrd /boot/intel-ucode.img"
-
-cat > /etc/grub.d/09_custom << GRUBEOF
-#!/bin/sh
-exec tail -n +3 \$0
-menuentry "Arch Linux (CachyOS kernel)" --class arch --class gnu-linux --class gnu --class os {{
-    insmod btrfs
-    insmod part_gpt
-    insmod fat
-    search --no-floppy --fs-uuid --set=root $ROOT_UUID
-    linux /boot/vmlinuz-linux-cachyos root=UUID=$ROOT_UUID rw quiet splash
-    $UCODE
-    initrd /boot/initramfs-linux-cachyos.img
-}}
-GRUBEOF
-chmod +x /etc/grub.d/09_custom
-
-# Set Arch as default
-sed -i 's/^GRUB_DEFAULT=.*/GRUB_DEFAULT="Arch Linux (CachyOS kernel)"/' /etc/default/grub
-grep -q '^GRUB_DEFAULT=' /etc/default/grub || echo 'GRUB_DEFAULT="Arch Linux (CachyOS kernel)"' >> /etc/default/grub
-
 # ── Probe for Windows ─────────────────────────────────────────────────────────
 PROBE_LIST="/etc/nen-probe-mounts"
 if [ -f "$PROBE_LIST" ]; then
