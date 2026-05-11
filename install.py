@@ -227,6 +227,27 @@ class Installer:
         finally:
             tmp.unlink(missing_ok=True)
 
+    def _teardown_mounts(self) -> None:
+        """
+        Aggressively unmount everything under /mnt and release swap.
+        Called before any partitioning step to ensure a clean slate even if
+        a previous install attempt left mounts behind.
+        """
+        # Release bind-mounts created by setup_cachyos on the live host
+        for mp in ("/var/cache/pacman/pkg", "/var/lib/pacman"):
+            os.system(f"umount -l {mp} 2>/dev/null || true")
+
+        # Swapoff before touching swap partitions
+        os.system("swapoff -a 2>/dev/null || true")
+
+        # Lazy-unmount the whole /mnt tree (handles nested mounts)
+        os.system("umount -l /mnt 2>/dev/null || true")
+        # Follow up with recursive unmount for any stragglers
+        os.system("umount -R /mnt 2>/dev/null || true")
+
+        # Give the kernel a moment to process the unmounts
+        time.sleep(1)
+
     # ── Input ────────────────────────────────────────────────────────────────
 
     def prompt(self, msg: str) -> str:
@@ -752,10 +773,9 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
         self.p_swap = f"{self.disk}{suffix}2"
         self.p_root = f"{self.disk}{suffix}3"
 
+        self._teardown_mounts()
+
         with Spinner("Partitioning disk (clean)…"):
-            os.system("umount -l /var/cache/pacman/pkg 2>/dev/null || true")
-            os.system("umount -R /mnt 2>/dev/null || true")
-            os.system("swapoff -a 2>/dev/null || true")
 
             self.run(f"sgdisk --zap-all {self.disk}")
             self.run(f"sgdisk -o {self.disk}")
@@ -783,9 +803,7 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
         If no EFI exists, a 512 MiB EFI is carved first, then swap + root.
         The Windows EFI partition is NEVER reformatted.
         """
-        os.system("umount -l /var/cache/pacman/pkg 2>/dev/null || true")
-        os.system("umount -R /mnt 2>/dev/null || true")
-        os.system("swapoff -a 2>/dev/null || true")
+        self._teardown_mounts()
 
         suffix   = self._part_suffix()
         next_num = self._next_part_num()
@@ -1173,9 +1191,7 @@ rm -f /etc/sudoers.d/99-yay
         keep_log = (ans == "n")
 
         with Spinner("Unmounting and cleaning up…"):
-            os.system("umount -l /var/cache/pacman/pkg 2>/dev/null || true")
-            os.system("umount -R /mnt 2>/dev/null || true")
-            os.system("swapoff -a 2>/dev/null || true")
+            self._teardown_mounts()
             if not keep_log and LOG_FILE.exists():
                 LOG_FILE.unlink(missing_ok=True)
             try:
@@ -1250,8 +1266,9 @@ rm -f /etc/sudoers.d/99-yay
 
 def _on_sigint(sig, frame):
     print(f"\n\n  {C.YELLOW}Interrupted — cleaning up…{C.RESET}")
-    subprocess.run("umount -R /mnt 2>/dev/null", shell=True)
-    subprocess.run("swapoff -a 2>/dev/null", shell=True)
+    os.system("swapoff -a 2>/dev/null")
+    os.system("umount -l /mnt 2>/dev/null")
+    os.system("umount -R /mnt 2>/dev/null")
     os.system("tput cnorm")
     sys.exit(0)
 
