@@ -889,6 +889,10 @@ class Installer:
               "--dbpath /mnt/var/lib/pacman "
               "--cachedir /mnt/var/cache/pacman/pkg")
 
+        # Ensure directories exist for the custom --dbpath/--cachedir
+        Path("/mnt/var/lib/pacman").mkdir(parents=True, exist_ok=True)
+        Path("/mnt/var/cache/pacman/pkg").mkdir(parents=True, exist_ok=True)
+
         with Spinner("Refreshing keyrings…"):
             self.run(f"{PM} -Sy --noconfirm archlinux-keyring", check=False)
         self.tick("Keyrings updated")
