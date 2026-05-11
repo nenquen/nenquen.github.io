@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+"""
+Nen's Arch Linux Installer — Optimized Edition
+CachyOS kernel · KDE Plasma · NVIDIA-aware · Dual-boot support
+"""
 
 import subprocess
 import sys
@@ -255,7 +259,6 @@ class Installer:
 
     def _header(self) -> None:
         sys.stdout.write(C.CLEAR)
-        print(f"\n  {C.LILAC}{C.BOLD}Nen's Arch Linux Installer — Optimized Edition{C.RESET}")
         print()
 
     def render(self) -> None:
@@ -345,6 +348,14 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
                 finally:
                     Path(tmp_path).unlink(missing_ok=True)
                 
+                # Verify repo was added
+                try:
+                    conf_content = Path("/etc/pacman.conf").read_text()
+                    if "[cachyos]" not in conf_content:
+                        log.warning("CachyOS repository header [cachyos] not found in /etc/pacman.conf")
+                except Exception as e:
+                    log.error(f"Failed to verify /etc/pacman.conf: {e}")
+
                 # After running the script, we MUST ensure the host's pacman is synced
                 self.run("pacman -Sy --noconfirm")
 
@@ -906,6 +917,8 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
             # Validate packages using the databases we just synced
             valid = []
             skipped = []
+            mandatory = ["base", "linux-cachyos", "btrfs-progs", "sudo"]
+            
             for p in pkgs:
                 r = subprocess.run(
                     f"{PM} -Si {p}",
@@ -914,8 +927,15 @@ command -v cachyos-rate-mirrors &>/dev/null && cachyos-rate-mirrors || true
                 if r.returncode == 0:
                     valid.append(p)
                 else:
+                    if p in mandatory:
+                        # CRITICAL: Do not skip the kernel or base system!
+                        raise InstallError(
+                            f"CRITICAL PACKAGE NOT FOUND: {p}\n"
+                            "This usually means the CachyOS repositories failed to initialize.\n"
+                            "Please check your internet connection or the logs."
+                        )
                     skipped.append(p)
-                    log.warning("Package not found, skipping: %s", p)
+                    log.warning("Optional package not found, skipping: %s", p)
 
         if skipped:
             print(f"  {Sym.WARN}  Skipped {len(skipped)} unavailable package(s): "
@@ -1046,20 +1066,26 @@ grep -q '^GRUB_TIMEOUT=' /etc/default/grub || echo 'GRUB_TIMEOUT=10' >> /etc/def
 sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=menu/' /etc/default/grub
 grep -q '^GRUB_TIMEOUT_STYLE=' /etc/default/grub || echo 'GRUB_TIMEOUT_STYLE=menu' >> /etc/default/grub
 
-# ── Explicit custom entry for linux-cachyos ───────────────────────────────────
+# ── Explicit custom entry for linux-cachyos at the TOP ───────────────────────
 ROOT_UUID=$(blkid -s UUID -o value {self.p_root})
 UCODE=""
-[ -f /boot/intel-ucode.img ] && UCODE="initrd /intel-ucode.img"
+[ -f /boot/intel-ucode.img ] && UCODE="initrd /boot/intel-ucode.img"
 
-mkdir -p /boot/grub
-cat >> /boot/grub/custom.cfg << GRUBEOF
-menuentry "Arch Linux (CachyOS kernel)" {{
+cat > /etc/grub.d/09_custom << GRUBEOF
+#!/bin/sh
+exec tail -n +3 \$0
+menuentry "Arch Linux (CachyOS kernel)" --class arch --class gnu-linux --class gnu --class os {{
     search --no-floppy --fs-uuid --set=root $ROOT_UUID
-    linux /vmlinuz-linux-cachyos root=UUID=$ROOT_UUID rw quiet splash
+    linux /boot/vmlinuz-linux-cachyos root=UUID=$ROOT_UUID rw quiet splash
     $UCODE
-    initrd /initramfs-linux-cachyos.img
+    initrd /boot/initramfs-linux-cachyos.img
 }}
 GRUBEOF
+chmod +x /etc/grub.d/09_custom
+
+# Set Arch as default
+sed -i 's/^GRUB_DEFAULT=.*/GRUB_DEFAULT="Arch Linux (CachyOS kernel)"/' /etc/default/grub
+grep -q '^GRUB_DEFAULT=' /etc/default/grub || echo 'GRUB_DEFAULT="Arch Linux (CachyOS kernel)"' >> /etc/default/grub
 
 # ── Probe for Windows ─────────────────────────────────────────────────────────
 PROBE_LIST="/etc/nen-probe-mounts"
