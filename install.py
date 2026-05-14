@@ -452,61 +452,52 @@ class Installer:
                 fs_type=fs_type, label=label, mountpoint=mountpoint.strip()
             ))
 
-        # ── Unallocated regions via sgdisk ────────────────────────────────────
-        sgdisk_out = subprocess.run(
-            f"sgdisk -p {disk.name} 2>/dev/null",
-            shell=True, capture_output=True, text=True
-        ).stdout
+                # ── Unallocated regions via parted ──────────────────────────────
+            free_raw = subprocess.run(
+                f"parted -m {disk.name} unit B print free",
+                shell=True,
+                capture_output=True,
+                text=True
+            ).stdout.strip()
 
-        sector_size = 512
-        for line in sgdisk_out.splitlines():
-            if "Logical sector size:" in line:
+            for line in free_raw.splitlines():
+                # Example:
+                # 1:1048576B:538968063B:537919488B:fat32::boot, esp;
+                # free:538968064B:108000000000B:107GB:free;
+                cols = line.strip().split(":")
+
+                if len(cols) < 5:
+                    continue
+
+                # parted marks free space with "free"
+                if cols[-1].strip(" ;") != "free":
+                    continue
+
                 try:
-                    sector_size = int(line.split()[-2])
-                except (IndexError, ValueError):
-                    pass
+                    start = int(cols[1].replace("B", ""))
+                    end   = int(cols[2].replace("B", ""))
+                    size  = int(cols[3].replace("B", ""))
+                except ValueError:
+                    continue
 
-        first_usable = last_usable = 0
-        for line in sgdisk_out.splitlines():
-            if "First usable sector" in line:
-                try: first_usable = int(line.split()[-1])
-                except ValueError: pass
-            if "Last usable sector" in line:
-                try: last_usable = int(line.split()[-1])
-                except ValueError: pass
+                if size < 5 * 1024**3:
+                    continue
 
-        ranges = []
-        in_table = False
-        for line in sgdisk_out.splitlines():
-            if line.strip().startswith("Number"):
-                in_table = True
-                continue
-            if in_table and line.strip():
-                cols = line.split()
-                if len(cols) >= 3:
-                    try:
-                        start = int(cols[1])
-                        end   = int(cols[2])
-                        ranges.append((start, end))
-                    except ValueError:
-                        pass
+                # Convert bytes → sectors
+                sector_size = 512
+                free_start_sector = start // sector_size
+                free_end_sector   = end // sector_size
 
-        ranges.sort()
-        cursor = first_usable
-        for (start, end) in ranges:
-            if start > cursor + 2048:
-                gap_start = cursor
-                gap_end   = start - 1
-                free_bytes = (gap_end - gap_start + 1) * sector_size
-                if free_bytes >= 5 * 1024 ** 3:
-                    parts.append(PartInfo(
-                        name="", size_bytes=free_bytes,
-                        size_str=fmt_bytes(free_bytes),
-                        fs_type="", label="Unallocated",
-                        is_free=True,
-                        _free_start=gap_start,
-                        _free_end=gap_end,
-                    ))
+                parts.append(PartInfo(
+                    name="",
+                    size_bytes=size,
+                    size_str=fmt_bytes(size),
+                    fs_type="",
+                    label="Unallocated",
+                    is_free=True,
+                    _free_start=free_start_sector,
+                    _free_end=free_end_sector,
+                ))
             cursor = end + 1
 
         # Trailing free space after the last partition
@@ -621,8 +612,10 @@ class Installer:
         for disk in disks:
             if not self._has_windows(disk):
                 continue
-            free_parts = [p for p in disk.partitions
-                          if p.is_free and p.size_bytes >= MIN_FREE_BYTES]
+            free_parts = [
+                p for p in disk.partitions
+                if p.is_free and p.size_bytes >= 20 * 1024**3
+            ]
             if free_parts:
                 dualboot_candidates.append((disk, free_parts))
 
@@ -736,6 +729,7 @@ class Installer:
               f"{C.YELLOW}{self.disk}{C.RESET}.")
         print(f"  {C.DIM}Windows and all existing data will not be touched.{C.RESET}")
         print(f"\n  Continuing in 5 seconds… (Ctrl+C to abort)")
+        print(f"         {C.DIM}DEBUG free_start={p._free_start} free_end={p._free_end}{C.RESET}")
         time.sleep(5)
 
     # ── Partitioning ─────────────────────────────────────────────────────────
