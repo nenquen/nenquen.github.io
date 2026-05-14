@@ -426,18 +426,20 @@ class Installer:
         return sorted(disks, key=lambda d: d.size_bytes, reverse=True)
 
     def _scan_partitions(self, disk: DiskInfo) -> list:
-        parts = []
-
-        # ── Existing partitions via lsblk ────────────────────────────────────
+        # ── Existing partitions via lsblk ─────────────────────────────────────
+        # Use -l (list) format to suppress tree-drawing characters (├─ / └─)
+        # that corrupt the NAME column when parsed with split().
         raw = subprocess.run(
-            f"lsblk -pno NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT {disk.name}",
+            f"lsblk -pnlo NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT {disk.name}",
             shell=True, capture_output=True, text=True
         ).stdout.strip()
 
         for line in raw.splitlines():
-            cols = line.split(None, 4)
-            pname = cols[0] if len(cols) > 0 else ""
-            if pname == disk.name:
+            cols  = line.split(None, 4)
+            pname = cols[0].strip() if cols else ""
+            # Strip any residual non-ASCII / tree chars that some kernels emit
+            pname = re.sub(r'[^\x20-\x7E]', '', pname).strip()
+            if not pname or pname == disk.name:
                 continue
             psize_str  = cols[1] if len(cols) > 1 else "?"
             fs_type    = cols[2] if len(cols) > 2 else ""
@@ -470,12 +472,19 @@ class Installer:
                     pass
 
         first_usable = last_usable = 0
+        # sgdisk may emit both values on ONE line:
+        #   "First usable sector is 34, last usable sector is 976773134"
+        # Use regex so each value is captured independently.
+        _fu_re = re.compile(r'[Ff]irst usable sector[^0-9]+(\d+)')
+        _lu_re = re.compile(r'[Ll]ast usable sector[^0-9]+(\d+)')
         for line in sgdisk_out.splitlines():
-            if "First usable sector" in line:
-                try: first_usable = int(line.split()[-1])
+            m = _fu_re.search(line)
+            if m:
+                try: first_usable = int(m.group(1))
                 except ValueError: pass
-            if "Last usable sector" in line:
-                try: last_usable = int(line.split()[-1])
+            m = _lu_re.search(line)
+            if m:
+                try: last_usable = int(m.group(1))
                 except ValueError: pass
 
         log.debug("[sgdisk] %s  sector_size=%d  first_usable=%d  last_usable=%d",
@@ -811,20 +820,27 @@ class Installer:
         return "p" if any(x in self.disk for x in ("nvme", "mmcblk")) else ""
 
     def _next_part_num(self) -> int:
-        """Return the next available partition number on self.disk."""
+        """Return the next available partition number on self.disk.
+        Uses list format (-l) to avoid lsblk tree-drawing chars (├─ / └─)
+        that corrupt partition names when parsed with replace/lstrip.
+        """
         raw = subprocess.run(
-            f"lsblk -pno NAME {self.disk}",
+            f"lsblk -pnlo NAME {self.disk}",
             shell=True, capture_output=True, text=True
         ).stdout.strip()
         nums = []
         for line in raw.splitlines():
-            line = line.strip()
-            if line == self.disk:
+            name = line.strip()
+            if name == self.disk:
                 continue
-            tail = line.replace(self.disk, "").lstrip("p")
+            # Strip any residual tree chars then extract trailing number
+            clean = re.sub(r'[^\x00-\x7F]|[-─├└│]', '', name)
+            tail  = clean.replace(self.disk, "").lstrip("p")
             if tail.isdigit():
                 nums.append(int(tail))
-        return max(nums, default=0) + 1
+        result = max(nums, default=0) + 1
+        log.debug("[next_part_num] %s  existing=%s  next=%d", self.disk, nums, result)
+        return result
 
     def _partition_clean(self) -> None:
         suffix = self._part_suffix()
