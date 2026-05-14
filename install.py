@@ -452,57 +452,78 @@ class Installer:
                 fs_type=fs_type, label=label, mountpoint=mountpoint.strip()
             ))
 
-                # ── Unallocated regions via parted ──────────────────────────────
-            free_raw = subprocess.run(
-                f"parted -m {disk.name} unit B print free",
-                shell=True,
-                capture_output=True,
-                text=True
-            ).stdout.strip()
+        # ── Unallocated regions via sgdisk ────────────────────────────────────
+        sgdisk_out = subprocess.run(
+            f"sgdisk -p {disk.name} 2>/dev/null",
+            shell=True, capture_output=True, text=True
+        ).stdout
 
-            for line in free_raw.splitlines():
-                # Example:
-                # 1:1048576B:538968063B:537919488B:fat32::boot, esp;
-                # free:538968064B:108000000000B:107GB:free;
-                cols = line.strip().split(":")
+        log.debug("[sgdisk] %s raw output:\n%s", disk.name, sgdisk_out)
 
-                if len(cols) < 5:
-                    continue
-
-                # parted marks free space with "free"
-                if cols[-1].strip(" ;") != "free":
-                    continue
-
+        sector_size = 512
+        for line in sgdisk_out.splitlines():
+            if "Logical sector size:" in line:
                 try:
-                    start = int(cols[1].replace("B", ""))
-                    end   = int(cols[2].replace("B", ""))
-                    size  = int(cols[3].replace("B", ""))
-                except ValueError:
-                    continue
+                    sector_size = int(line.split()[-2])
+                except (IndexError, ValueError):
+                    pass
 
-                if size < 5 * 1024**3:
-                    continue
+        first_usable = last_usable = 0
+        for line in sgdisk_out.splitlines():
+            if "First usable sector" in line:
+                try: first_usable = int(line.split()[-1])
+                except ValueError: pass
+            if "Last usable sector" in line:
+                try: last_usable = int(line.split()[-1])
+                except ValueError: pass
 
-                # Convert bytes → sectors
-                sector_size = 512
-                free_start_sector = start // sector_size
-                free_end_sector   = end // sector_size
+        log.debug("[sgdisk] %s  sector_size=%d  first_usable=%d  last_usable=%d",
+                  disk.name, sector_size, first_usable, last_usable)
 
-                parts.append(PartInfo(
-                    name="",
-                    size_bytes=size,
-                    size_str=fmt_bytes(size),
-                    fs_type="",
-                    label="Unallocated",
-                    is_free=True,
-                    _free_start=free_start_sector,
-                    _free_end=free_end_sector,
-                ))
+        ranges = []
+        in_table = False
+        for line in sgdisk_out.splitlines():
+            if line.strip().startswith("Number"):
+                in_table = True
+                continue
+            if in_table and line.strip():
+                cols = line.split()
+                if len(cols) >= 3:
+                    try:
+                        start = int(cols[1])
+                        end   = int(cols[2])
+                        ranges.append((start, end))
+                    except ValueError:
+                        pass
+
+        log.debug("[sgdisk] %s  partition ranges: %s", disk.name, ranges)
+
+        ranges.sort()
+        cursor = first_usable
+        for (start, end) in ranges:
+            if start > cursor + 2048:
+                gap_start = cursor
+                gap_end   = start - 1
+                free_bytes = (gap_end - gap_start + 1) * sector_size
+                log.debug("[sgdisk] %s  gap found: sectors %d-%d  = %.2f GB",
+                          disk.name, gap_start, gap_end, free_bytes / 1024**3)
+                if free_bytes >= 5 * 1024 ** 3:
+                    parts.append(PartInfo(
+                        name="", size_bytes=free_bytes,
+                        size_str=fmt_bytes(free_bytes),
+                        fs_type="", label="Unallocated",
+                        is_free=True,
+                        _free_start=gap_start,
+                        _free_end=gap_end,
+                    ))
             cursor = end + 1
 
         # Trailing free space after the last partition
+        log.debug("[sgdisk] %s  trailing check: last_usable=%d  cursor=%d",
+                  disk.name, last_usable, cursor)
         if last_usable > cursor + 2048:
             free_bytes = (last_usable - cursor + 1) * sector_size
+            log.debug("[sgdisk] %s  trailing free: %.2f GB", disk.name, free_bytes / 1024**3)
             if free_bytes >= 5 * 1024 ** 3:
                 parts.append(PartInfo(
                     name="", size_bytes=free_bytes,
@@ -606,16 +627,12 @@ class Installer:
         self._print_disk_map(disks)
 
         # ── Detect dual-boot candidates ─────────────────────────────────────
-        # A dual-boot candidate is a disk that has Windows AND at least one
-        # unallocated region >= 30 GB (the user already ran Shrink Volume).
+        # A dual-boot candidate is any disk with at least one unallocated
+        # region >= 30 GB (covers both Windows dual-boot and VM test setups).
         dualboot_candidates = []
         for disk in disks:
-            if not self._has_windows(disk):
-                continue
-            free_parts = [
-                p for p in disk.partitions
-                if p.is_free and p.size_bytes >= 20 * 1024**3
-            ]
+            free_parts = [p for p in disk.partitions
+                          if p.is_free and p.size_bytes >= MIN_FREE_BYTES]
             if free_parts:
                 dualboot_candidates.append((disk, free_parts))
 
@@ -623,19 +640,22 @@ class Installer:
         print(f"  {C.BOLD}INSTALLATION MODE{C.RESET}\n")
 
         if dualboot_candidates:
-            print(f"  {C.GREEN}Dual-boot candidate(s) detected!{C.RESET}")
+            has_win_candidate = any(self._has_windows(d) for d, _ in dualboot_candidates)
+            label = "Dual-boot candidate(s) detected!" if has_win_candidate else "Unallocated space detected!"
+            print(f"  {C.GREEN}{label}{C.RESET}")
             for disk, fparts in dualboot_candidates:
+                win_tag = f" {C.YELLOW}[Windows]{C.RESET}" if self._has_windows(disk) else ""
                 for fp in fparts:
-                    print(f"  {Sym.INFO}  {disk.name} → "
+                    print(f"  {Sym.INFO}  {disk.name}{win_tag} → "
                           f"{C.GREEN}{fp.size_str}{C.RESET} unallocated "
-                          f"— ready for Arch alongside Windows.")
+                          f"— ready for Arch.")
             print()
 
         print(f"  {C.DIM}1){C.RESET}  {C.BOLD}Clean install{C.RESET}  "
               f"— wipe a whole disk and install Arch")
         if dualboot_candidates:
-            print(f"  {C.DIM}2){C.RESET}  {C.BOLD}Dual-boot{C.RESET}  "
-                  f"— install Arch into the unallocated space (keeps Windows)")
+            print(f"  {C.DIM}2){C.RESET}  {C.BOLD}Dual-boot / side-by-side{C.RESET}  "
+                  f"— install Arch into the unallocated space")
         print()
 
         valid_choices = ["1", "2"] if dualboot_candidates else ["1"]
@@ -729,7 +749,6 @@ class Installer:
               f"{C.YELLOW}{self.disk}{C.RESET}.")
         print(f"  {C.DIM}Windows and all existing data will not be touched.{C.RESET}")
         print(f"\n  Continuing in 5 seconds… (Ctrl+C to abort)")
-        print(f"         {C.DIM}DEBUG free_start={p._free_start} free_end={p._free_end}{C.RESET}")
         time.sleep(5)
 
     # ── Partitioning ─────────────────────────────────────────────────────────
@@ -1272,10 +1291,10 @@ rm -f /etc/sudoers.d/99-yay
                 break
             print(f"  {Sym.WARN}  Passwords don't match — try again.")
 
-        print(f"\n  {C.BOLD}BOOTLOADER{C.RESET}  {C.DIM}(dual-boot always uses GRUB){C.RESET}")
-        print(f"  {C.DIM}1) systemd-boot  (recommended for single-boot){C.RESET}")
+        print(f"\n  {C.BOLD}BOOTLOADER{C.RESET}")
+        print(f"  {C.DIM}1) systemd-boot{C.RESET}")
         print(f"  {C.DIM}2) GRUB{C.RESET}")
-        choice = self.prompt(f"  {C.CYAN}› Select [1/2] (default 1):{C.RESET} ").strip()
+        choice = self.prompt(f"  {C.CYAN}› Select [1/2]:{C.RESET} ").strip()
         self.bootloader = "grub" if choice == "2" else "systemd-boot"
 
         self.in_progress = True
