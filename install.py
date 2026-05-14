@@ -426,6 +426,8 @@ class Installer:
         return sorted(disks, key=lambda d: d.size_bytes, reverse=True)
 
     def _scan_partitions(self, disk: DiskInfo) -> list:
+        parts = []
+
         # ── Existing partitions via lsblk ─────────────────────────────────────
         # Use -l (list) format to suppress tree-drawing characters (├─ / └─)
         # that corrupt the NAME column when parsed with split().
