@@ -452,13 +452,14 @@ class Installer:
                 fs_type=fs_type, label=label, mountpoint=mountpoint.strip()
             ))
 
-        # ── Unallocated regions via sgdisk ────────────────────────────────────
-        sgdisk_out = subprocess.run(
-            f"sgdisk -p {disk.name} 2>/dev/null",
+        # ── Unallocated regions via sgdisk (primary) ──────────────────────────
+        sgdisk_res = subprocess.run(
+            f"sgdisk -p {disk.name}",
             shell=True, capture_output=True, text=True
-        ).stdout
-
-        log.debug("[sgdisk] %s raw output:\n%s", disk.name, sgdisk_out)
+        )
+        sgdisk_out = sgdisk_res.stdout
+        log.debug("[sgdisk] %s stdout:\n%s", disk.name, sgdisk_out)
+        log.debug("[sgdisk] %s stderr:\n%s", disk.name, sgdisk_res.stderr)
 
         sector_size = 512
         for line in sgdisk_out.splitlines():
@@ -496,16 +497,58 @@ class Installer:
                     except ValueError:
                         pass
 
-        log.debug("[sgdisk] %s  partition ranges: %s", disk.name, ranges)
+        log.debug("[sgdisk] %s  partition ranges from sgdisk: %s", disk.name, ranges)
+
+        # ── Fallback: sfdisk -J (works on MBR and GPT) ────────────────────────
+        if last_usable == 0 or not ranges:
+            log.debug("[sfdisk] sgdisk incomplete — trying sfdisk -J for %s", disk.name)
+            sfdisk_res = subprocess.run(
+                f"sfdisk -J {disk.name}",
+                shell=True, capture_output=True, text=True
+            )
+            log.debug("[sfdisk] %s stdout:\n%s", disk.name, sfdisk_res.stdout)
+            log.debug("[sfdisk] %s stderr:\n%s", disk.name, sfdisk_res.stderr)
+            try:
+                import json as _json
+                j = _json.loads(sfdisk_res.stdout)
+                pt = j.get("partitiontable", {})
+                if pt.get("sectorsize"):
+                    sector_size = int(pt["sectorsize"])
+                if pt.get("lastlba") and last_usable == 0:
+                    last_usable = int(pt["lastlba"])
+                if pt.get("firstlba") and first_usable == 0:
+                    first_usable = int(pt["firstlba"])
+                if not ranges:
+                    for p in pt.get("partitions", []):
+                        s  = p.get("start", 0)
+                        sz = p.get("size",  0)
+                        if s and sz:
+                            ranges.append((s, s + sz - 1))
+                log.debug("[sfdisk] %s  first=%d  last=%d  ranges=%s",
+                          disk.name, first_usable, last_usable, ranges)
+            except Exception as exc:
+                log.debug("[sfdisk] JSON parse error for %s: %s", disk.name, exc)
+
+        # ── Last resort: derive last_usable from disk size ─────────────────────
+        if last_usable == 0 and disk.size_bytes > 0:
+            total_sectors = disk.size_bytes // sector_size
+            last_usable   = total_sectors - 34   # GPT tail GPT header = 33 sectors
+            if first_usable == 0:
+                first_usable = 2048
+            log.debug("[fallback] %s  derived last_usable=%d from disk size",
+                      disk.name, last_usable)
+
+        log.debug("[scan] %s  FINAL: sector_size=%d  first=%d  last=%d  ranges=%s",
+                  disk.name, sector_size, first_usable, last_usable, ranges)
 
         ranges.sort()
         cursor = first_usable
         for (start, end) in ranges:
             if start > cursor + 2048:
-                gap_start = cursor
-                gap_end   = start - 1
+                gap_start  = cursor
+                gap_end    = start - 1
                 free_bytes = (gap_end - gap_start + 1) * sector_size
-                log.debug("[sgdisk] %s  gap found: sectors %d-%d  = %.2f GB",
+                log.debug("[scan] %s  gap: sectors %d-%d  = %.2f GB",
                           disk.name, gap_start, gap_end, free_bytes / 1024**3)
                 if free_bytes >= 5 * 1024 ** 3:
                     parts.append(PartInfo(
@@ -519,11 +562,11 @@ class Installer:
             cursor = end + 1
 
         # Trailing free space after the last partition
-        log.debug("[sgdisk] %s  trailing check: last_usable=%d  cursor=%d",
+        log.debug("[scan] %s  trailing check: last_usable=%d  cursor=%d",
                   disk.name, last_usable, cursor)
         if last_usable > cursor + 2048:
             free_bytes = (last_usable - cursor + 1) * sector_size
-            log.debug("[sgdisk] %s  trailing free: %.2f GB", disk.name, free_bytes / 1024**3)
+            log.debug("[scan] %s  trailing free: %.2f GB", disk.name, free_bytes / 1024**3)
             if free_bytes >= 5 * 1024 ** 3:
                 parts.append(PartInfo(
                     name="", size_bytes=free_bytes,
@@ -707,9 +750,6 @@ class Installer:
         unless none is found.
         """
         self.install_mode = "dualboot"
-        self.bootloader   = "grub"   # GRUB required for Windows chain-loading
-        print(f"\n  {Sym.INFO}  Dual-boot mode forces {C.BOLD}GRUB{C.RESET} "
-              f"(required for Windows chain-loading).")
 
         # Flatten candidates into a numbered list
         options = []
@@ -722,7 +762,8 @@ class Installer:
         else:
             print(f"\n  {C.BOLD}SELECT UNALLOCATED REGION{C.RESET}\n")
             for i, (d, fp) in enumerate(options):
-                print(f"  {C.DIM}{i+1}){C.RESET}  {d.name}  → "
+                win_tag = f" {C.YELLOW}[Windows]{C.RESET}" if self._has_windows(d) else ""
+                print(f"  {C.DIM}{i+1}){C.RESET}  {d.name}{win_tag}  → "
                       f"{C.GREEN}{fp.size_str}{C.RESET} free space")
             while True:
                 raw = self.prompt(f"\n  {C.CYAN}› Region number:{C.RESET} ").strip()
@@ -730,6 +771,12 @@ class Installer:
                     chosen_disk, chosen_free = options[int(raw) - 1]
                     break
                 print(f"  {Sym.WARN}  Invalid selection.")
+
+        # Only force GRUB when Windows is present (needs chain-loading)
+        if self._has_windows(chosen_disk):
+            self.bootloader = "grub"
+            print(f"\n  {Sym.INFO}  Windows detected — forcing {C.BOLD}GRUB{C.RESET} "
+                  f"(required for Windows chain-loading).")
 
         self.disk       = chosen_disk.name
         self.free_start = chosen_free._free_start   # int
@@ -815,6 +862,15 @@ class Installer:
         If no EFI exists, a 512 MiB EFI is carved first, then swap + root.
         The Windows EFI partition is NEVER reformatted.
         """
+        if not getattr(self, "free_start", 0) or not getattr(self, "free_end", 0):
+            raise InstallError(
+                "Dual-boot region is undefined (free_start/free_end not set). "
+                "Re-run disk selection."
+            )
+        if self.free_start == 0:
+            raise InstallError(
+                "free_start=0 — this would overwrite the beginning of the disk. Aborting."
+            )
         self._teardown_mounts()
 
         suffix   = self._part_suffix()
