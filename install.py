@@ -29,30 +29,30 @@ def find_disk():
 CAT = OrderedDict()
 CAT["X11 Desktops"] = OrderedDict([
     ("Budgie", ["budgie-desktop"]), ("Cinnamon", ["cinnamon"]),
-    ("Deepin", ["deepin", "deepin-extra"]), ("Enlightenment", ["enlightenment", "terminology"]),
+    ("Deepin", ["deepin"]), ("Enlightenment", ["enlightenment", "terminology"]),
     ("GNOME Flashback", ["gnome-flashback"]), ("LXDE", ["lxde"]),
-    ("LXQt", ["lxqt"]), ("MATE", ["mate", "mate-extra"]),
+    ("LXQt", ["lxqt"]), ("MATE", ["mate"]),
     ("Pantheon", ["pantheon"]), ("Sugar", ["sugar"]),
-    ("Xfce", ["xfce4", "xfce4-goodies"]),
+    ("Xfce", ["xfce4"]),
 ])
 CAT["Wayland Desktops"] = OrderedDict([
     ("COSMIC", ["cosmic"]), ("GNOME", ["gnome", "gnome-tweaks"]),
-    ("KDE Plasma", ["plasma-meta", "kde-applications-meta"]),
+    ("KDE Plasma", ["plasma-meta"]),
 ])
 CAT["Window Managers"] = OrderedDict([
     ("Blackbox", ["blackbox"]), ("Fluxbox", ["fluxbox"]), ("FVWM3", ["fvwm3"]),
     ("IceWM", ["icewm"]), ("JWM", ["jwm"]), ("KWin (X11)", ["kwin-x11"]),
     ("Marco", ["marco"]), ("Metacity", ["metacity"]), ("Muffin", ["muffin"]),
-    ("Openbox", ["openbox", "obconf", "lxappearance"]), ("PekWM", ["pekwm"]),
+    ("Openbox", ["openbox", "obconf"]), ("PekWM", ["pekwm"]),
     ("twm", ["xorg-twm"]), ("Window Maker", ["windowmaker"]), ("Xfwm", ["xfwm4"]),
-    ("bspwm", ["bspwm", "sxhkd", "polybar"]), ("Herbstluftwm", ["herbstluftwm"]),
-    ("i3", ["i3-wm", "i3status", "i3lock", "dmenu"]),
+    ("bspwm", ["bspwm", "sxhkd"]), ("Herbstluftwm", ["herbstluftwm"]),
+    ("i3", ["i3-wm", "i3status", "i3lock"]),
     ("Notion", ["notion"]), ("Ratpoison", ["ratpoison"]), ("StumpWM", ["stumpwm"]),
     ("awesome", ["awesome"]), ("Qtile", ["qtile"]),
     ("xmonad", ["xmonad", "xmonad-contrib"]), ("labwc", ["labwc"]),
     ("wayfire", ["wayfire", "wf-config"]), ("Weston", ["weston"]),
-    ("niri", ["niri"]), ("Sway", ["sway", "swaybg", "waybar", "wofi", "alacritty", "mako"]),
-    ("Hyprland", ["hyprland", "hyprpaper", "hyprlock", "noto-fonts", "kitty"]),
+    ("niri", ["niri"]), ("Sway", ["sway", "swaybg", "mako"]),
+    ("Hyprland", ["hyprland", "hyprpaper", "hyprlock"]),
     ("river", ["river"]), ("Cage", ["cage"]),
 ])
 
@@ -172,7 +172,7 @@ def main():
         "ttf-roboto", "ttf-opensans", "ttf-fira-code",
         "ttf-hack", "ttf-jetbrains-mono", "ttf-inconsolata",
         "ttf-croscore", "ttf-caladea", "ttf-carlito", "adobe-source-code-pro-fonts",
-        "fakeroot", "debugedit",
+        "fakeroot", "debugedit", "brightnessctl",
     ]
     all_pkgs = base + extra
 
