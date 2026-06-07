@@ -126,6 +126,7 @@ def main():
     if pw != pw2: print("Passwords dont match!"); sys.exit(1)
 
     extra = main_menu(CAT)
+    os.system("clear")
 
     p = "" if "nvme" not in disk and "mmc" not in disk else "p"
     rootp = disk + p + "2"
@@ -192,6 +193,7 @@ def main():
     script += "useradd -m -G wheel %s\n" % username
     script += "echo -e '%s\\n%s' | passwd %s 2>/dev/null\n" % (pw, pw, username)
     script += "echo '%%wheel ALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers\n"
+    script += "echo 'Defaults !requiretty' >> /etc/sudoers\n"
     script += "systemctl enable NetworkManager\n"
     script += "systemctl enable bluetooth\n"
     script += "systemctl enable ly@tty2.service\n"
@@ -223,6 +225,7 @@ def main():
     script += "sed -i 's/^MODULES=()/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf\n"
     script += "mkinitcpio -P\n"
     script += "rm -rf /tmp/yay 2>/dev/null || true\n"
+    script += "pacman -S --noconfirm go\n"
     script += ("su - %s -c 'cd /tmp && git clone https://aur.archlinux.org/yay.git /tmp/yay "
                "&& cd /tmp/yay && makepkg -si --noconfirm'\n") % username
     script += "rm -rf /tmp/yay\n"
