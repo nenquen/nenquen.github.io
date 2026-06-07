@@ -132,10 +132,15 @@ def main():
     efip = disk + p + "1"
 
     print("\n[1/7] Partitioning...")
+    run(["umount", "-R", "/mnt"], check=False)
+    run(["swapoff", "-a"], check=False)
+    run(["umount", disk + p + "1"], check=False)
+    run(["umount", disk + p + "2"], check=False)
     run(["sgdisk", "--zap-all", disk])
     run(["sgdisk", "--clear", disk])
     run(["sgdisk", "-n1:0:+1G", "-t1:ef00", disk])
     run(["sgdisk", "-n2:0:0", "-t2:8300", disk])
+    time.sleep(2)
 
     print("[2/7] Formatting...")
     run(["mkfs.fat", "-F32", efip])
