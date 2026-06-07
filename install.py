@@ -259,6 +259,7 @@ def main():
         f.write(r.stdout)
 
     print("Unmounting...")
+    run(["swapoff", "-a"], check=False)
     run(["umount", "-R", "/mnt"])
 
     print("\nDone! Rebooting in 5 seconds...")
