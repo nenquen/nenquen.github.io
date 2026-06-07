@@ -226,8 +226,9 @@ def main():
     script += "mkinitcpio -P\n"
     script += "rm -rf /tmp/yay 2>/dev/null || true\n"
     script += "pacman -S --noconfirm go\n"
-    script += ("su - %s -c 'cd /tmp && git clone https://aur.archlinux.org/yay.git /tmp/yay "
-               "&& cd /tmp/yay && makepkg -si --noconfirm'\n") % username
+    script += ("su - %s -c 'cd /tmp && git clone https://aur.archlinux.org/yay.git /tmp/yay && "
+               "cd /tmp/yay && makepkg'\n") % username
+    script += "pacman -U --noconfirm /tmp/yay/*.pkg.tar.zst\n"
     script += "rm -rf /tmp/yay\n"
     script += "for dm in gdm sddm lightdm lxdm; do\n"
     script += "  if systemctl list-unit-files --type=service 2>/dev/null | grep -q \"$dm\"; then\n"
