@@ -58,11 +58,12 @@ CAT["Window Managers"] = OrderedDict([
 
 def show_menu(items, selected, title):
     while True:
-        print("\n" + title)
+        os.system("clear")
+        print(title)
         keys = list(items.keys())
         for i, name in enumerate(keys, 1):
-            m = "[*]" if selected.get(name) else "[ ]"
-            print("  %2d. %s %s" % (i, m, name))
+            m = "(+)" if selected.get(name) else "( )"
+            print("  %d. %s %s" % (i, m, name))
         print("  (b) Back  (a) All  (n) None  (d) Done")
         c = input("> ").strip().lower()
         if c == "b": return "back"
@@ -83,12 +84,12 @@ def main_menu(cat):
     selected = {}
     keys = list(cat.keys())
     while True:
-        print("\nDESKTOP / WM SELECTION")
+        os.system("clear")
+        print("DESKTOP / WM SELECTION")
         for i, c in enumerate(keys, 1):
             n = sum(1 for name in cat[c] if selected.get(name))
             print("  %d. %s (%d selected)" % (i, c, n))
-        print("  d. Done / Install")
-        print("  q. Quit")
+        print("  d. Done  q. Quit")
         c = input("> ").strip().lower()
         if c == "q": print("Aborted."); sys.exit(0)
         if c == "d": break
