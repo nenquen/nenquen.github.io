@@ -291,25 +291,18 @@ def main():
         print("\n  No desktop/WM selected. Only base system will be installed.")
 
     p = "" if "nvme" not in disk and "mmc" not in disk else "p"
-    is_uefi = os.path.isdir("/sys/firmware/efi")
     root_part = f"{disk}{p}2"
+    efi_part = f"{disk}{p}1"
 
     # ── Partitioning ──
     status("Wiping disk and creating partitions")
     run(["sgdisk", "--zap-all", disk])
     run(["sgdisk", "--clear", disk])
+    run(["sgdisk", "-n1:0:+1G", "-t1:ef00", disk])
+    run(["sgdisk", "-n2:0:0", "-t2:8300", disk])
 
-    if is_uefi:
-        run(["sgdisk", "-n1:0:+1G", "-t1:ef00", disk])
-        run(["sgdisk", "-n2:0:0", "-t2:8300", disk])
-        efi_part = f"{disk}{p}1"
-    else:
-        run(["sgdisk", "-n1:0:+2M", "-t1:ef02", disk])
-        run(["sgdisk", "-n2:0:0", "-t2:8300", disk])
-
-    if is_uefi:
-        status("Formatting EFI partition (FAT32)")
-        run(["mkfs.fat", "-F32", efi_part])
+    status("Formatting EFI partition (FAT32)")
+    run(["mkfs.fat", "-F32", efi_part])
 
     status("Formatting root partition (Btrfs)")
     run(["mkfs.btrfs", "-f", root_part])
@@ -327,15 +320,14 @@ def main():
     status("Mounting partitions")
     run(["mount", "-o", "subvol=@", root_part, "/mnt"])
     os.makedirs("/mnt/boot", exist_ok=True)
-    if is_uefi:
-        run(["mount", efi_part, "/mnt/boot"])
+    run(["mount", efi_part, "/mnt/boot"])
 
     # ── Base install ──
     base_pkgs = [
         "base", "linux", "linux-firmware",
         "btrfs-progs", "sudo", "networkmanager",
         "python", "python-pip",
-        "grub", "efibootmgr" if is_uefi else "",
+        "grub", "efibootmgr",
         "amd-ucode", "intel-ucode",
         "ly", "git", "xorg-server", "xorg-xinit", "xorg-xauth", "mesa",
         # Audio (PipeWire)
@@ -362,7 +354,6 @@ def main():
     # ── Configure ──
     status("Configuring system")
 
-    # Always use ly, disable any other DMs pulled in by DEs
     setup_script = f"""#!/bin/bash
 set -e
 
@@ -464,11 +455,7 @@ for dm in gdm sddm lightdm lxdm; do
     fi
 done
 
-if [ -d /sys/firmware/efi ]; then
-    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
-else
-    grub-install --target=i386-pc {disk}
-fi
+grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 grub-mkconfig -o /boot/grub/grub.cfg
 
 truncate -s 0 /swapfile
