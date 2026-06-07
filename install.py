@@ -17,27 +17,22 @@ def run(cmd, check=True, capture=True, **kw):
         sys.exit(1)
     return r
 
-def find_disk():
-    for p in ["/dev/sda", "/dev/nvme0n1", "/dev/vda", "/dev/mmcblk0"]:
-        if os.path.exists(p): return p
-    r = subprocess.run(["lsblk", "-dno", "NAME", "-e", "7,11,1,2"], capture_output=True, text=True, check=True)
-    for d in r.stdout.strip().split():
-        f = "/dev/" + d
-        if os.path.exists(f) and "loop" not in d and "ram" not in d: return f
-    return None
 
 CAT = OrderedDict()
 CAT["X11 Desktops"] = OrderedDict([
     ("Budgie", ["budgie-desktop"]), ("Cinnamon", ["cinnamon"]),
     ("Deepin", ["deepin"]), ("Enlightenment", ["enlightenment", "terminology"]),
     ("GNOME Flashback", ["gnome-flashback"]), ("LXDE", ["lxde"]),
-    ("LXQt", ["lxqt"]), ("MATE", ["mate"]),
-    ("Pantheon", ["pantheon"]), ("Sugar", ["sugar"]),
-    ("Xfce", ["xfce4"]),
+    ("LXQt", ["lxqt-session", "lxqt-panel", "pcmanfm-qt", "qterminal", "lxqt-config"]),
+    ("MATE", ["mate-session-manager", "mate-panel", "caja", "marco", "mate-terminal", "mate-control-center"]),
+    ("Pantheon", ["pantheon-session", "pantheon-files", "pantheon-terminal", "switchboard", "pantheon-settings-daemon", "gala", "wingpanel"]),
+    ("Sugar", ["sugar"]),
+    ("Xfce", ["xfce4-session", "xfwm4", "xfce4-panel", "thunar", "xfce4-terminal", "xfce4-power-manager"]),
 ])
 CAT["Wayland Desktops"] = OrderedDict([
-    ("COSMIC", ["cosmic"]), ("GNOME", ["gnome", "gnome-tweaks"]),
-    ("KDE Plasma", ["plasma-meta"]),
+    ("COSMIC", ["cosmic-session", "cosmic-comp", "cosmic-panel", "cosmic-files", "cosmic-terminal", "cosmic-settings", "cosmic-settings-daemon"]),
+    ("GNOME", ["gnome-shell", "gnome-session", "nautilus", "gnome-terminal", "gnome-control-center", "gnome-tweaks", "gvfs"]),
+    ("KDE Plasma", ["plasma-desktop", "dolphin", "konsole", "systemsettings", "plasma-nm", "plasma-pa", "powerdevil", "bluedevil", "kde-gtk-config", "breeze"]),
 ])
 CAT["Window Managers"] = OrderedDict([
     ("Blackbox", ["blackbox"]), ("Fluxbox", ["fluxbox"]), ("FVWM3", ["fvwm3"]),
@@ -111,8 +106,31 @@ def main():
     if os.geteuid() != 0: print("FATAL: must be root"); sys.exit(1)
     if not os.path.isfile("/etc/arch-release"): print("FATAL: must run from Arch ISO"); sys.exit(1)
 
-    disk = find_disk()
-    if not disk: print("FATAL: no disk found"); sys.exit(1)
+    disks = []
+    r = subprocess.run(["lsblk", "-dno", "NAME,SIZE,MODEL", "-e", "7,11,1,2"], capture_output=True, text=True)
+    for line in r.stdout.strip().split("\n"):
+        parts = line.strip().split(None, 2)
+        if parts:
+            name = parts[0]
+            size = parts[1] if len(parts) > 1 else ""
+            model = parts[2] if len(parts) > 2 else ""
+            disks.append(("/dev/" + name, size, model))
+
+    if not disks:
+        print("FATAL: no disk found"); sys.exit(1)
+
+    print("\nAvailable disks:")
+    for i, (d, s, m) in enumerate(disks, 1):
+        print("  %d. %s  %s  %s" % (i, d, s, m))
+    while True:
+        try:
+            c = int(input("\nSelect disk: "))
+            if 1 <= c <= len(disks):
+                disk = disks[c-1][0]
+                break
+            print("Invalid number.")
+        except ValueError:
+            print("Invalid input.")
 
     print("\nDisk: " + disk)
     print("WARNING: ALL DATA will be DESTROYED!")
@@ -172,7 +190,7 @@ def main():
         "ttf-roboto", "ttf-opensans", "ttf-fira-code",
         "ttf-hack", "ttf-jetbrains-mono", "ttf-inconsolata",
         "ttf-croscore", "ttf-caladea", "ttf-carlito", "adobe-source-code-pro-fonts",
-        "fakeroot", "debugedit", "brightnessctl",
+        "fakeroot", "debugedit", "brightnessctl", "power-profiles-daemon",
     ]
     all_pkgs = base + extra
 
@@ -181,8 +199,11 @@ def main():
 
     print("[6/7] Configuring...")
 
+    r = subprocess.run(["curl", "-s", "http://ip-api.com/line?fields=timezone"], capture_output=True, text=True)
+    tz = r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else "Europe/Istanbul"
+
     script = "#!/bin/bash\nset -e\n"
-    script += "ln -sf /usr/share/zoneinfo/Europe/Istanbul /etc/localtime\n"
+    script += "ln -sf /usr/share/zoneinfo/%s /etc/localtime\n" % tz
     script += "hwclock --systohc\n"
     script += "sed -i 's/#en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen\n"
     script += "locale-gen\n"
@@ -199,6 +220,9 @@ def main():
     script += "systemctl enable ly@tty2.service\n"
     script += "systemctl disable getty@tty2.service 2>/dev/null || true\n"
     script += "systemctl --global enable pipewire pipewire-pulse wireplumber\n"
+    script += "systemctl enable fstrim.timer\n"
+    script += "systemctl enable paccache.timer 2>/dev/null || true\n"
+    script += "systemctl enable power-profiles-daemon\n"
     script += "pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com 2>/dev/null || true\n"
     script += "pacman-key --lsign-key F3B607488DB35A47 2>/dev/null || true\n"
     script += "pacman -U --noconfirm "
@@ -220,7 +244,7 @@ def main():
     script += "sed -i '/^#\\[multilib\\]/,/^#Include/{s/^#//}' /etc/pacman.conf\n"
     script += "pacman -Sy --noconfirm\n"
     script += "pacman -S --noconfirm linux-cachyos linux-cachyos-headers\n"
-    script += "pacman -S --noconfirm nvidia-open-dkms nvidia-utils nvidia-settings lib32-nvidia-utils nvidia-prime opencl-nvidia egl-wayland\n"
+    script += "pacman -S --noconfirm nvidia-open-dkms nvidia-utils lib32-nvidia-utils nvidia-prime opencl-nvidia egl-wayland\n"
     script += "pacman -Rdd --noconfirm linux 2>/dev/null || true\n"
     script += "sed -i 's/^MODULES=()/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf\n"
     script += "mkinitcpio -P\n"
@@ -268,4 +292,8 @@ def main():
     run(["reboot"], check=False)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nInstallation aborted.")
+        sys.exit(0)
