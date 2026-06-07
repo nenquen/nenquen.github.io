@@ -2,6 +2,29 @@
 
 import os, sys, time, subprocess, getpass
 from collections import OrderedDict
+from shutil import get_terminal_size
+
+def tw():
+    return get_terminal_size().columns
+
+def center(text):
+    w = tw()
+    return "\n".join(line.center(w) for line in text.split("\n"))
+
+def box(text, w=52):
+    lines = text.split("\n")
+    cw = max(len(l) for l in lines)
+    aw = min(max(cw + 4, 24), w)
+    tl = "\u250c" + "\u2500" * aw + "\u2510"
+    bl = "\u2514" + "\u2500" * aw + "\u2518"
+    out = [tl]
+    for l in lines:
+        out.append("\u2502 " + l.ljust(aw - 2) + " \u2502")
+    out.append(bl)
+    return "\n".join(out)
+
+def cbox(text, w=52):
+    return center(box(text, w))
 
 def run(cmd, check=True, capture=True, **kw):
     if capture:
@@ -10,7 +33,8 @@ def run(cmd, check=True, capture=True, **kw):
         kw["text"] = True
     r = subprocess.run(cmd, **kw)
     if check and r.returncode != 0:
-        print(" \n[ERROR] " + (" ".join(cmd) if isinstance(cmd, list) else cmd))
+        print(center("  \u2500" * 30))
+        print(center("  [ERROR]  " + (" ".join(cmd) if isinstance(cmd, list) else cmd)))
         if capture:
             if r.stdout: print(r.stdout)
             if r.stderr: print(r.stderr)
@@ -54,14 +78,14 @@ CAT["Window Managers"] = OrderedDict([
 def show_menu(items, selected, title):
     while True:
         os.system("clear")
-        print(" " + title)
+        print(cbox("  " + title))
         keys = list(items.keys())
         for i, name in enumerate(keys, 1):
             m = "(+)" if selected.get(name) else "( )"
-            print(" %2d. %s %s" % (i, m, name))
+            print(center("  %2d. %s %s" % (i, m, name)))
         print("")
-        print("   [b] Back  [a] All  [n] None  [d] Done")
-        c = input("> ").strip().lower()
+        print(center("  [b] Back  [a] All  [n] None  [d] Done"))
+        c = input(" > ").strip().lower()
         if c == "b": return "back"
         if c == "a":
             for k in keys: selected[k] = True
@@ -73,30 +97,30 @@ def show_menu(items, selected, title):
         try:
             idx = int(c) - 1
             if 0 <= idx < len(keys): selected[keys[idx]] = not selected.get(keys[idx])
-            else: print(" Invalid number.")
-        except ValueError: print(" Invalid input.")
+            else: print(center("  Invalid number."))
+        except ValueError: print(center("  Invalid input."))
 
 def main_menu(cat):
     selected = {}
     keys = list(cat.keys())
     while True:
         os.system("clear")
-        print(" DESKTOP / WM SELECTION")
+        print(cbox("  DESKTOP / WM SELECTION"))
         for i, c in enumerate(keys, 1):
             n = sum(1 for name in cat[c] if selected.get(name))
-            print(" %2d. %s (%d selected)" % (i, c, n))
+            print(center("  %2d. %s (%d selected)" % (i, c, n)))
         print("")
-        print("   [d] Done  [q] Quit")
-        c = input("> ").strip().lower()
-        if c == "q": print(" Aborted."); sys.exit(0)
+        print(center("  [d] Done  [q] Quit"))
+        c = input(" > ").strip().lower()
+        if c == "q": print(center("  Aborted.")); sys.exit(0)
         if c == "d": break
         try:
             idx = int(c) - 1
             if 0 <= idx < len(keys):
                 r = show_menu(cat[keys[idx]], selected, keys[idx])
                 if r == "done": break
-            else: print(" Invalid number.")
-        except ValueError: print(" Invalid input.")
+            else: print(center("  Invalid number."))
+        except ValueError: print(center("  Invalid input."))
     pkgs = []
     for c in cat:
         for name, pkg_list in cat[c].items():
@@ -105,8 +129,8 @@ def main_menu(cat):
 
 def main():
     os.system("clear")
-    if os.geteuid() != 0: print(" FATAL: must be root"); sys.exit(1)
-    if not os.path.isfile("/etc/arch-release"): print(" FATAL: must run from Arch ISO"); sys.exit(1)
+    if os.geteuid() != 0: print(center("  FATAL: must be root")); sys.exit(1)
+    if not os.path.isfile("/etc/arch-release"): print(center("  FATAL: must run from Arch ISO")); sys.exit(1)
 
     disks = []
     r = subprocess.run(["lsblk", "-dno", "NAME,SIZE,MODEL", "-e", "7,11,1,2"], capture_output=True, text=True)
@@ -119,31 +143,41 @@ def main():
             disks.append(("/dev/" + name, size, model))
 
     if not disks:
-        print(" FATAL: no disk found"); sys.exit(1)
+        print(center("  FATAL: no disk found")); sys.exit(1)
 
-    print(" \nAvailable disks:")
+    dlist = []
     for i, (d, s, m) in enumerate(disks, 1):
-        print(" %3d. %s  %s  %s" % (i, d, s, m))
+        dlist.append("  %d.  %-12s %8s  %s" % (i, d, s, m))
+    print("")
+    print(cbox("  Available disks\n" + "\n".join(dlist)))
+    print(center("  Select disk [1-%d]:" % len(disks)))
     while True:
         try:
-            c = int(input(" \nSelect disk: "))
+            c = int(input(" > "))
             if 1 <= c <= len(disks):
                 disk = disks[c-1][0]
                 break
-            print(" Invalid number.")
+            print(center("  Invalid number."))
         except ValueError:
-            print(" Invalid input.")
+            print(center("  Invalid input."))
 
-    print(" \nDisk: " + disk)
-    print(" WARNING: ALL DATA will be DESTROYED!")
-    print(" Type 'yes' to continue:", end=" ")
-    if input().strip().lower() != "yes": print(" Aborted."); sys.exit(0)
+    print(cbox("SELECTED:  " + disk + "\n\n"
+               "\u2500\u2500\u2500\u2500 WARNING \u2500\u2500\u2500\u2500\n"
+               "ALL DATA on this disk\nwill be DESTROYED!\n"
+               "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n"))
+    print(center("  Type 'yes' to continue:"), end=" ")
+    if input().strip().lower() != "yes": print(center("  Aborted.")); sys.exit(0)
 
+    print("")
+    print(cbox("  User setup"))
+    print(center("  Username:"))
     username = ""
-    while not username: username = input("Username: ").strip()
-    pw = getpass.getpass("Password: ")
-    pw2 = getpass.getpass("Confirm password: ")
-    if pw != pw2: print(" Passwords dont match!"); sys.exit(1)
+    while not username: username = input(" > ").strip()
+    print(center("  Password:"))
+    pw = getpass.getpass(" > ")
+    print(center("  Confirm password:"))
+    pw2 = getpass.getpass(" > ")
+    if pw != pw2: print(center("  Passwords dont match!")); sys.exit(1)
 
     extra = main_menu(CAT)
     os.system("clear")
@@ -152,7 +186,8 @@ def main():
     rootp = disk + p + "2"
     efip = disk + p + "1"
 
-    print(" \n[1/7] Partitioning...")
+    print(center("\u2500" * tw()))
+    print(center("  [1/7]  Partitioning"))
     run(["umount", "-R", "/mnt"], check=False)
     run(["swapoff", "-a"], check=False)
     run(["umount", disk + p + "1"], check=False)
@@ -164,18 +199,18 @@ def main():
     run(["sgdisk", "-n2:0:0", "-t2:8300", disk])
     time.sleep(2)
 
-    print(" [2/7] Formatting...")
+    print(center("  [2/7]  Formatting"))
     run(["mkfs.fat", "-F32", efip])
     run(["mkfs.btrfs", "-f", rootp])
 
-    print(" [3/7] Creating subvolume...")
+    print(center("  [3/7]  Creating subvolume"))
     os.makedirs("/mnt/tmp_btrfs", exist_ok=True)
     run(["mount", rootp, "/mnt/tmp_btrfs"])
     run(["btrfs", "subvolume", "create", "/mnt/tmp_btrfs/@"])
     run(["umount", "/mnt/tmp_btrfs"])
     os.rmdir("/mnt/tmp_btrfs")
 
-    print(" [4/7] Mounting...")
+    print(center("  [4/7]  Mounting"))
     run(["mount", "-o", "subvol=@", rootp, "/mnt"])
     os.makedirs("/mnt/boot", exist_ok=True)
     run(["mount", efip, "/mnt/boot"])
@@ -196,10 +231,10 @@ def main():
     ]
     all_pkgs = base + extra
 
-    print(" [5/7] Installing %d packages..." % len(all_pkgs))
+    print(center("  [5/7]  Installing %d packages" % len(all_pkgs)))
     run(["pacstrap", "/mnt"] + all_pkgs)
 
-    print(" [6/7] Configuring...")
+    print(center("  [6/7]  Configuring"))
 
     r = subprocess.run(["curl", "-s", "http://ip-api.com/line?fields=timezone"], capture_output=True, text=True)
     tz = r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else "Europe/Istanbul"
@@ -274,22 +309,25 @@ def main():
     r = subprocess.run(["arch-chroot", "/mnt", "bash", "/setup.sh"], capture_output=True, text=True)
     os.remove("/mnt/setup.sh")
     if r.returncode != 0:
-        print(" \n[ERROR] Chroot failed")
+        print(center("  \u2500" * 30))
+        print(center("  [ERROR]  Chroot failed"))
         if r.stdout: print(r.stdout)
         if r.stderr: print(r.stderr)
         sys.exit(1)
 
-    print(" [7/7] Generating fstab...")
+    print(center("  [7/7]  Generating fstab"))
     r = subprocess.run(["genfstab", "-U", "/mnt"], capture_output=True, text=True, check=True)
     with open("/mnt/etc/fstab", "w") as f:
         f.write(r.stdout)
 
-    print(" Unmounting...")
+    print(center("\u2500" * tw()))
+    print(center("  Unmounting"))
     run(["swapoff", "-a"], check=False)
     run(["umount", "-R", "/mnt"])
 
-    print(" \nDone! Rebooting in 5 seconds...")
-    print(" User: " + username)
+    print(center("\u2500" * tw()))
+    print(center("  Done! Rebooting in 5 seconds"))
+    print(center("  User: " + username))
     time.sleep(5)
     run(["reboot"], check=False)
 
@@ -297,5 +335,5 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print(" \nInstallation aborted.")
+        print(cbox("  Installation aborted.\n" + "\u2500" * 20))
         sys.exit(0)
