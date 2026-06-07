@@ -11,10 +11,10 @@ def center(text):
     w = tw()
     return "\n".join(line.center(w) for line in text.split("\n"))
 
-def box(text, w=52):
+def box(text):
     lines = text.split("\n")
     cw = max(len(l) for l in lines)
-    aw = min(max(cw + 4, 24), w)
+    aw = cw + 4
     tl = "\u250c" + "\u2500" * aw + "\u2510"
     bl = "\u2514" + "\u2500" * aw + "\u2518"
     out = [tl]
@@ -23,8 +23,8 @@ def box(text, w=52):
     out.append(bl)
     return "\n".join(out)
 
-def cbox(text, w=52):
-    return center(box(text, w))
+def cbox(text):
+    return center(box(text))
 
 def run(cmd, check=True, capture=True, **kw):
     if capture:
@@ -78,13 +78,14 @@ CAT["Window Managers"] = OrderedDict([
 def show_menu(items, selected, title):
     while True:
         os.system("clear")
-        print(cbox("  " + title))
+        content = "  " + title + "\n"
         keys = list(items.keys())
         for i, name in enumerate(keys, 1):
             m = "(+)" if selected.get(name) else "( )"
-            print(center("  %2d. %s %s" % (i, m, name)))
-        print("")
-        print(center("  [b] Back  [a] All  [n] None  [d] Done"))
+            content += "  %2d. %s %s\n" % (i, m, name)
+        content += "\n"
+        content += "  [b] Back  [a] All  [n] None  [d] Done"
+        print(cbox(content))
         c = input(" > ").strip().lower()
         if c == "b": return "back"
         if c == "a":
@@ -97,30 +98,31 @@ def show_menu(items, selected, title):
         try:
             idx = int(c) - 1
             if 0 <= idx < len(keys): selected[keys[idx]] = not selected.get(keys[idx])
-            else: print(center("  Invalid number."))
-        except ValueError: print(center("  Invalid input."))
+            else: print(cbox("  Invalid number."))
+        except ValueError: print(cbox("  Invalid input."))
 
 def main_menu(cat):
     selected = {}
     keys = list(cat.keys())
     while True:
         os.system("clear")
-        print(cbox("  DESKTOP / WM SELECTION"))
+        content = "  DESKTOP / WM SELECTION\n"
         for i, c in enumerate(keys, 1):
             n = sum(1 for name in cat[c] if selected.get(name))
-            print(center("  %2d. %s (%d selected)" % (i, c, n)))
-        print("")
-        print(center("  [d] Done  [q] Quit"))
+            content += "  %2d. %s (%d selected)\n" % (i, c, n)
+        content += "\n"
+        content += "  [d] Done  [q] Quit"
+        print(cbox(content))
         c = input(" > ").strip().lower()
-        if c == "q": print(center("  Aborted.")); sys.exit(0)
+        if c == "q": print(cbox("  Aborted.")); sys.exit(0)
         if c == "d": break
         try:
             idx = int(c) - 1
             if 0 <= idx < len(keys):
                 r = show_menu(cat[keys[idx]], selected, keys[idx])
                 if r == "done": break
-            else: print(center("  Invalid number."))
-        except ValueError: print(center("  Invalid input."))
+            else: print(cbox("  Invalid number."))
+        except ValueError: print(cbox("  Invalid input."))
     pkgs = []
     for c in cat:
         for name, pkg_list in cat[c].items():
@@ -129,8 +131,8 @@ def main_menu(cat):
 
 def main():
     os.system("clear")
-    if os.geteuid() != 0: print(center("  FATAL: must be root")); sys.exit(1)
-    if not os.path.isfile("/etc/arch-release"): print(center("  FATAL: must run from Arch ISO")); sys.exit(1)
+    if os.geteuid() != 0: print(cbox("  FATAL: must be root")); sys.exit(1)
+    if not os.path.isfile("/etc/arch-release"): print(cbox("  FATAL: must run from Arch ISO")); sys.exit(1)
 
     disks = []
     r = subprocess.run(["lsblk", "-dno", "NAME,SIZE,MODEL", "-e", "7,11,1,2"], capture_output=True, text=True)
@@ -143,41 +145,41 @@ def main():
             disks.append(("/dev/" + name, size, model))
 
     if not disks:
-        print(center("  FATAL: no disk found")); sys.exit(1)
+        print(cbox("  FATAL: no disk found")); sys.exit(1)
 
     dlist = []
     for i, (d, s, m) in enumerate(disks, 1):
         dlist.append("  %d.  %-12s %8s  %s" % (i, d, s, m))
-    print("")
-    print(cbox("  Available disks\n" + "\n".join(dlist)))
-    print(center("  Select disk [1-%d]:" % len(disks)))
+    print(cbox("  Available disks\n\n" + "\n".join(dlist) + "\n\n"
+               "  Select disk [1-%d]:" % len(disks)))
     while True:
         try:
             c = int(input(" > "))
             if 1 <= c <= len(disks):
                 disk = disks[c-1][0]
                 break
-            print(center("  Invalid number."))
+            print(cbox("  Invalid number."))
         except ValueError:
-            print(center("  Invalid input."))
+            print(cbox("  Invalid input."))
 
     print(cbox("SELECTED:  " + disk + "\n\n"
                "\u2500\u2500\u2500\u2500 WARNING \u2500\u2500\u2500\u2500\n"
                "ALL DATA on this disk\nwill be DESTROYED!\n"
-               "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n"))
-    print(center("  Type 'yes' to continue:"), end=" ")
-    if input().strip().lower() != "yes": print(center("  Aborted.")); sys.exit(0)
+               "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n"
+               "Type 'yes' to continue:  "))
+    if input().strip().lower() != "yes": print(cbox("  Aborted.")); sys.exit(0)
 
     print("")
     print(cbox("  User setup"))
-    print(center("  Username:"))
     username = ""
-    while not username: username = input(" > ").strip()
+    while not username:
+        print(center("  Username:"))
+        username = input("  > ").strip()
     print(center("  Password:"))
-    pw = getpass.getpass(" > ")
+    pw = getpass.getpass("  > ")
     print(center("  Confirm password:"))
-    pw2 = getpass.getpass(" > ")
-    if pw != pw2: print(center("  Passwords dont match!")); sys.exit(1)
+    pw2 = getpass.getpass("  > ")
+    if pw != pw2: print(cbox("  Passwords dont match!")); sys.exit(1)
 
     extra = main_menu(CAT)
     os.system("clear")
@@ -335,5 +337,5 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print(cbox("  Installation aborted.\n" + "\u2500" * 20))
+        print(cbox("  Installation aborted."))
         sys.exit(0)
