@@ -32,7 +32,7 @@ CAT["X11 Desktops"] = OrderedDict([
     ("Deepin", ["deepin", "deepin-extra"]), ("Enlightenment", ["enlightenment", "terminology"]),
     ("GNOME Flashback", ["gnome-flashback"]), ("LXDE", ["lxde"]),
     ("LXQt", ["lxqt"]), ("MATE", ["mate", "mate-extra"]),
-    ("Pantheon", ["pantheon"]), ("Sugar", ["sugar", "sugar-fructose"]),
+    ("Pantheon", ["pantheon"]), ("Sugar", ["sugar"]),
     ("Xfce", ["xfce4", "xfce4-goodies"]),
 ])
 CAT["Wayland Desktops"] = OrderedDict([
@@ -41,16 +41,16 @@ CAT["Wayland Desktops"] = OrderedDict([
 ])
 CAT["Window Managers"] = OrderedDict([
     ("Blackbox", ["blackbox"]), ("Fluxbox", ["fluxbox"]), ("FVWM3", ["fvwm3"]),
-    ("IceWM", ["icewm", "icewm-utils"]), ("JWM", ["jwm"]), ("KWin (X11)", ["kwin-x11"]),
+    ("IceWM", ["icewm"]), ("JWM", ["jwm"]), ("KWin (X11)", ["kwin-x11"]),
     ("Marco", ["marco"]), ("Metacity", ["metacity"]), ("Muffin", ["muffin"]),
     ("Openbox", ["openbox", "obconf", "lxappearance"]), ("PekWM", ["pekwm"]),
     ("twm", ["xorg-twm"]), ("Window Maker", ["windowmaker"]), ("Xfwm", ["xfwm4"]),
     ("bspwm", ["bspwm", "sxhkd", "polybar"]), ("Herbstluftwm", ["herbstluftwm"]),
-    ("i3", ["i3-wm", "i3status", "i3lock", "dmenu"]), ("LeftWM", ["leftwm"]),
+    ("i3", ["i3-wm", "i3status", "i3lock", "dmenu"]),
     ("Notion", ["notion"]), ("Ratpoison", ["ratpoison"]), ("StumpWM", ["stumpwm"]),
-    ("awesome", ["awesome"]), ("Qtile", ["qtile"]), ("spectrwm", ["spectrwm"]),
+    ("awesome", ["awesome"]), ("Qtile", ["qtile"]),
     ("xmonad", ["xmonad", "xmonad-contrib"]), ("labwc", ["labwc"]),
-    ("wayfire", ["wayfire", "wf-config", "wlogout"]), ("Weston", ["weston"]),
+    ("wayfire", ["wayfire", "wf-config"]), ("Weston", ["weston"]),
     ("niri", ["niri"]), ("Sway", ["sway", "swaybg", "waybar", "wofi", "alacritty", "mako"]),
     ("Hyprland", ["hyprland", "hyprpaper", "hyprlock", "noto-fonts", "kitty"]),
     ("river", ["river"]), ("Cage", ["cage"]),
@@ -58,7 +58,7 @@ CAT["Window Managers"] = OrderedDict([
 
 def show_menu(items, selected, title):
     while True:
-        print("\n-- " + title + " --")
+        print("\n" + title)
         keys = list(items.keys())
         for i, name in enumerate(keys, 1):
             m = "[*]" if selected.get(name) else "[ ]"
@@ -83,7 +83,7 @@ def main_menu(cat):
     selected = {}
     keys = list(cat.keys())
     while True:
-        print("\n=== DESKTOP / WM SELECTION ===")
+        print("\nDESKTOP / WM SELECTION")
         for i, c in enumerate(keys, 1):
             n = sum(1 for name in cat[c] if selected.get(name))
             print("  %d. %s (%d selected)" % (i, c, n))
@@ -136,6 +136,7 @@ def main():
     run(["swapoff", "-a"], check=False)
     run(["umount", disk + p + "1"], check=False)
     run(["umount", disk + p + "2"], check=False)
+    run(["wipefs", "-a", disk], check=False)
     run(["sgdisk", "--zap-all", disk])
     run(["sgdisk", "--clear", disk])
     run(["sgdisk", "-n1:0:+1G", "-t1:ef00", disk])
@@ -164,12 +165,11 @@ def main():
         "ly", "git", "xorg-server", "xorg-xinit", "xorg-xauth", "mesa",
         "pipewire", "pipewire-pulse", "pipewire-alsa", "pipewire-jack",
         "wireplumber", "alsa-utils", "sof-firmware",
-        "bluez", "bluez-utils", "bluez-libs", "bluez-obex", "libspa-bluetooth",
+        "bluez", "bluez-utils", "bluez-libs", "bluez-obex",
         "noto-fonts", "noto-fonts-emoji", "noto-fonts-cjk", "noto-fonts-extra",
         "ttf-dejavu", "ttf-liberation", "ttf-ubuntu-font-family",
         "ttf-roboto", "ttf-opensans", "ttf-fira-code",
         "ttf-hack", "ttf-jetbrains-mono", "ttf-inconsolata",
-        "ttf-font-awesome", "ttf-material-design-icons",
         "ttf-croscore", "ttf-caladea", "ttf-carlito", "adobe-source-code-pro-fonts",
     ]
     all_pkgs = base + extra
