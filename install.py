@@ -126,8 +126,6 @@ def main():
     if pw != pw2: print("Passwords dont match!"); sys.exit(1)
 
     extra = main_menu(CAT)
-    if extra: print("\nSelected %d packages." % len(extra))
-    else: print("\nNo DE/WM selected.")
 
     p = "" if "nvme" not in disk and "mmc" not in disk else "p"
     rootp = disk + p + "2"
@@ -173,6 +171,7 @@ def main():
         "ttf-roboto", "ttf-opensans", "ttf-fira-code",
         "ttf-hack", "ttf-jetbrains-mono", "ttf-inconsolata",
         "ttf-croscore", "ttf-caladea", "ttf-carlito", "adobe-source-code-pro-fonts",
+        "fakeroot", "debugedit",
     ]
     all_pkgs = base + extra
 
@@ -189,17 +188,17 @@ def main():
     script += "echo 'LANG=en_US.UTF-8' > /etc/locale.conf\n"
     script += "echo 'archlinux' > /etc/hostname\n"
     script += "cat > /etc/hosts <<EOF\n127.0.0.1   localhost\n::1         localhost\n127.0.1.1   archlinux.localdomain archlinux\nEOF\n"
-    script += "echo -e 'root\\nroot' | passwd\n"
+    script += "echo -e 'root\\nroot' | passwd 2>/dev/null\n"
     script += "useradd -m -G wheel %s\n" % username
-    script += "echo -e '%s\\n%s' | passwd %s\n" % (pw, pw, username)
+    script += "echo -e '%s\\n%s' | passwd %s 2>/dev/null\n" % (pw, pw, username)
     script += "echo '%%wheel ALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers\n"
     script += "systemctl enable NetworkManager\n"
     script += "systemctl enable bluetooth\n"
     script += "systemctl enable ly@tty2.service\n"
     script += "systemctl disable getty@tty2.service 2>/dev/null || true\n"
     script += "systemctl --global enable pipewire pipewire-pulse wireplumber\n"
-    script += "pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com || true\n"
-    script += "pacman-key --lsign-key F3B607488DB35A47 || true\n"
+    script += "pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com 2>/dev/null || true\n"
+    script += "pacman-key --lsign-key F3B607488DB35A47 2>/dev/null || true\n"
     script += "pacman -U --noconfirm "
     script += "'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst' "
     script += "'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-27-1-any.pkg.tar.zst' "
