@@ -236,7 +236,6 @@ def main():
     script += "grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB\n"
     script += "grub-mkconfig -o /boot/grub/grub.cfg\n"
     script += "truncate -s 0 /swapfile\nchattr +C /swapfile\n"
-    script += "btrfs property set /swapfile compression none\n"
     script += "dd if=/dev/zero of=/swapfile bs=1M count=16384 2>/dev/null\n"
     script += "chmod 600 /swapfile\nmkswap /swapfile\nswapon /swapfile\n"
     script += "echo '/swapfile none swap defaults 0 0' >> /etc/fstab\n"
