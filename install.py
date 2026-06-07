@@ -216,6 +216,7 @@ def main():
     script += "[cachyos-extra-v3]\nInclude = /etc/pacman.d/cachyos-v3-mirrorlist\n"
     script += "[cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\nR\n"
     script += "else\n  cat >> /etc/pacman.conf << 'R'\n[cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\nR\nfi\n"
+    script += "sed -i '/^#\\[multilib\\]/,/^#Include/{s/^#//}' /etc/pacman.conf\n"
     script += "pacman -Sy --noconfirm\n"
     script += "pacman -S --noconfirm linux-cachyos linux-cachyos-headers\n"
     script += "pacman -S --noconfirm nvidia-open-dkms nvidia-utils nvidia-settings lib32-nvidia-utils nvidia-prime opencl-nvidia egl-wayland\n"
