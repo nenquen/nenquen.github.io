@@ -107,6 +107,7 @@ def main_menu(cat):
     return list(set(pkgs))
 
 def main():
+    os.system("clear")
     if os.geteuid() != 0: print("FATAL: must be root"); sys.exit(1)
     if not os.path.isfile("/etc/arch-release"): print("FATAL: must run from Arch ISO"); sys.exit(1)
 
