@@ -6,15 +6,16 @@ from collections import OrderedDict
 def box(text, title=None):
     lines = text.split("\n")
     lines.insert(0, "")
+    lines.append("")
     if title is not None:
         cw = max(max(len(l) for l in lines), len(title))
-        out = ["\u250c\u2500\u2500 " + title + " " + "\u2500" * (cw - len(title)) + "\u2510"]
+        out = ["\u250c\u2500\u2500 " + title + " " + "\u2500" * (cw - len(title) + 1) + "\u2510"]
     else:
         cw = max(len(l) for l in lines)
-        out = ["\u250c" + "\u2500" * (cw + 4) + "\u2510"]
+        out = ["\u250c" + "\u2500" * (cw + 5) + "\u2510"]
     for l in lines:
-        out.append("\u2502" + "  " + l.ljust(cw) + "  " + "\u2502")
-    out.append("\u2514" + "\u2500" * (cw + 4) + "\u2518")
+        out.append("\u2502" + "  " + l.ljust(cw) + "   " + "\u2502")
+    out.append("\u2514" + "\u2500" * (cw + 5) + "\u2518")
     return "\n" + "\n".join(out)
 
 def run(cmd, check=True, capture=True, **kw):
@@ -267,11 +268,11 @@ def main():
     ])
     os.rmdir("/mnt/tmp_btrfs")
 
-    os.makedirs("/mnt/boot", exist_ok=True)
     step("[4/7]  Mounting", [
         ("mount subvol @",      ["mount", "-o", "subvol=@", rootp, "/mnt"], False),
-        ("mount /boot",         ["mount", efip, "/mnt/boot"], False),
     ])
+    os.makedirs("/mnt/boot", exist_ok=True)
+    run(["mount", efip, "/mnt/boot"])
 
     base = [
         "base", "linux", "linux-firmware", "btrfs-progs", "sudo", "networkmanager",
