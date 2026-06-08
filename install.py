@@ -5,15 +5,16 @@ from collections import OrderedDict
 
 def box(text, title=None):
     lines = text.split("\n")
-    cw = max(len(l) for l in lines)
+    lines.insert(0, "")
     if title is not None:
-        cw = max(cw, len(title) + 4)
-        out = ["\u250c\u2500\u2500 " + title + " " + "\u2500" * (cw - len(title) - 4) + "\u2510"]
+        cw = max(max(len(l) for l in lines), len(title))
+        out = ["\u250c\u2500\u2500 " + title + " " + "\u2500" * (cw - len(title)) + "\u2510"]
     else:
-        out = ["\u250c" + "\u2500" * cw + "\u2510"]
+        cw = max(len(l) for l in lines)
+        out = ["\u250c" + "\u2500" * (cw + 4) + "\u2510"]
     for l in lines:
-        out.append("\u2502" + l.ljust(cw) + "\u2502")
-    out.append("\u2514" + "\u2500" * cw + "\u2518")
+        out.append("\u2502" + "  " + l.ljust(cw) + "  " + "\u2502")
+    out.append("\u2514" + "\u2500" * (cw + 4) + "\u2518")
     return "\n" + "\n".join(out)
 
 def run(cmd, check=True, capture=True, **kw):
