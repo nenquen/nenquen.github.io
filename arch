@@ -1,9 +1,0 @@
-#!/bin/bash
-cd /tmp
-curl -sL https://nenquen.github.io/install.py > /tmp/install.py
-
-if [ -t 0 ]; then
-    python3 /tmp/install.py
-else
-    python3 /tmp/install.py < /dev/tty
-fi
