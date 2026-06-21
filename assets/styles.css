@@ -52,7 +52,7 @@ body {
 
 .bios-label {
     position: absolute;
-    top: -10px;
+    top: -0.75em;
     left: 15px;
     background-color: #111111;
     padding: 0 5px;
@@ -63,11 +63,12 @@ body {
 
 .bios-nav {
     position: absolute;
-    top: -10px;
+    top: -0.75em;
     right: 15px;
     display: flex;
     gap: 15px;
     z-index: 1;
+    font-size: 11px;
 }
 
 .bios-link {
