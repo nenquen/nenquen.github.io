@@ -231,6 +231,7 @@
         .about-file-body {
             max-height: 240px;
             overflow-y: auto;
+            overscroll-behavior: contain;
             scroll-behavior: smooth;
             padding: 14px 14px 16px;
             font-size: 11px;
@@ -241,6 +242,10 @@
 
         .about-file-body::-webkit-scrollbar {
             width: 4px;
+        }
+
+        .about-file-body::-webkit-scrollbar-button {
+            display: none;
         }
 
         .about-file-body::-webkit-scrollbar-track {
@@ -396,28 +401,9 @@
             const el = document.querySelector('.about-file-body');
             if (!el) return;
 
-            let target = el.scrollTop;
-            let current = el.scrollTop;
-            let animating = false;
-
-            function animate() {
-                current += (target - current) * 0.1;
-                el.scrollTop = current;
-                if (Math.abs(target - current) > 0.5) {
-                    requestAnimationFrame(animate);
-                } else {
-                    animating = false;
-                }
-            }
-
             el.addEventListener('wheel', (e) => {
                 e.preventDefault();
-                target = Math.max(0, Math.min(target + e.deltaY, el.scrollHeight - el.clientHeight));
-                if (!animating) {
-                    animating = true;
-                    current = el.scrollTop;
-                    animate();
-                }
+                el.scrollBy({ top: e.deltaY, behavior: 'smooth' });
             }, { passive: false });
         })();
     </script>
