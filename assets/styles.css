@@ -118,8 +118,19 @@ body {
 
 .profile-desc {
     line-height: 1.4;
-    margin: 0;
+    margin: 0 0 12px 0;
     max-width: 320px;
+}
+
+.profile-more {
+    color: #666;
+    font-size: 10px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.profile-more:hover {
+    color: #999;
 }
 
 .discord-section {
