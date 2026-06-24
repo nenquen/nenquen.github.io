@@ -1,6 +1,6 @@
 @font-face {
     font-family: 'JetBrainsMono';
-    src: url('JetBrainsMono-Regular.ttf');
+    src: url('fonts/JetBrainsMono-Regular.ttf');
 }
 
 * {
@@ -169,6 +169,17 @@ body {
 
 .discord-join:hover {
     background-color: #1a1a1a;
+}
+
+/* --- Birthday --- */
+html.birthday #age {
+    color: #FFD700;
+    animation: ageGlow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes ageGlow {
+    0% { text-shadow: 0 0 4px #FFD700, 0 0 8px rgba(255, 215, 0, 0.4); }
+    100% { text-shadow: 0 0 8px #FFD700, 0 0 20px rgba(255, 215, 0, 0.6), 0 0 30px rgba(255, 215, 0, 0.3); }
 }
 
 /* Mobile responsive */

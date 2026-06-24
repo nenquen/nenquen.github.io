@@ -1,128 +1,427 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>about - nenquen</title>
-    <link rel="icon" type="image/png" href="../assets/favicon.png">
+    <link rel="icon" type="image/png" href="../assets/images/favicon.png">
     <link rel="stylesheet" href="../assets/styles.css">
     <meta property="og:title" content="about - nenquen">
     <meta property="og:description" content="Learn more about nenquen.">
-    <meta property="og:image" content="https://nenquen.github.io/assets/favicon.png">
+    <meta property="og:image" content="https://avatars.githubusercontent.com/u/96012695">
     <meta property="og:url" content="https://nenquen.github.io/about">
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#111111">
     <style>
-        .about-content {
-            gap: 14px;
-            padding: 8px 0;
+        html, body {
+            overflow: hidden !important;
+            height: 100vh !important;
+            min-height: 100vh;
+            align-items: center !important;
+            padding: 10px !important;
         }
 
-        .about-avatar {
-            width: 96px;
-            height: 96px;
-            border: 1px solid #333;
+        body.scrollable {
+            overflow-y: auto !important;
         }
 
-        .about-name {
-            font-size: 14px;
-            color: white;
-            letter-spacing: 2px;
-        }
-
-        .about-bio {
-            border: 1px solid #333;
-            padding: 12px 16px;
+        .about-wrap {
+            position: relative;
             width: 100%;
-            max-width: 300px;
-            text-align: left;
-        }
-
-        .about-bio-title {
-            font-size: 9px;
-            color: #666;
-            letter-spacing: 2px;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #222;
-            padding-bottom: 4px;
-        }
-
-        .about-bio p {
-            margin: 4px 0;
-            font-size: 11px;
-            line-height: 1.5;
-            color: #ccc;
-        }
-
-        .about-stats {
-            width: 100%;
-            max-width: 300px;
-            text-align: left;
-        }
-
-        .about-stats .info-row {
+            max-width: 520px;
             display: flex;
-            justify-content: space-between;
-            padding: 3px 0;
-            font-size: 11px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: safe center;
+            min-height: calc(100vh - 20px);
         }
 
-        .about-stats .info-key {
-            color: #666;
-        }
-
-        .about-stats .info-val {
-            color: #ccc;
-        }
-
-        .about-link {
-            display: inline-block;
-            padding: 10px 32px;
-            font-size: 12px;
-            letter-spacing: 3px;
-            border: 1px solid white;
-            color: white;
+        .back-link {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            font-size: 10px;
+            color: #555;
             text-decoration: none;
-            background-color: #111111;
-            transition: background-color 0.2s;
+            letter-spacing: 2px;
+            padding: 6px 12px;
+            border: 1px solid #222;
+            transition: color 0.2s, border-color 0.2s;
+            z-index: 10;
         }
 
-        .about-link:hover {
-            background-color: #222;
+        .back-link:hover {
+            color: #ccc;
+            border-color: #555;
+        }
+
+        .icons-row {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+            position: absolute;
+            z-index: 0;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .icons-row .file-icon {
+            position: static;
+            margin: 0;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .icons-row.hidden {
+            display: none;
+        }
+
+        .file-icon {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            z-index: 0;
+            padding: 6px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            transition: opacity 0.35s ease, transform 0.35s ease, background 0.15s, border-color 0.15s;
+            top: 50%;
+            left: 50%;
+            margin-left: -44px;
+            margin-top: -48px;
+            width: 88px;
+        }
+
+        .file-icon:hover {
+            border-color: rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
+        }
+
+        .file-icon.selected {
+            border-color: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.06);
+        }
+
+        .file-icon svg {
+            width: 64px;
+            height: 74px;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+            pointer-events: none;
+        }
+
+        .file-icon .file-label {
+            font-size: 10px;
+            color: #999;
+            letter-spacing: 0.5px;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .file-icon.opening {
+            opacity: 0;
+            transform: scale(1.2) translateY(-10px);
+            pointer-events: none;
+        }
+
+        .file-icon.hidden {
+            display: none;
+        }
+
+        .icons-row.hidden {
+            display: none;
+        }
+
+        @keyframes iconReopen {
+            0%   { opacity: 0; transform: scale(0.85) translateY(8px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .file-icon.reopening {
+            animation: iconReopen 0.35s ease forwards;
+        }
+
+        .about-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 6px 0;
+            width: 100%;
+            max-width: 520px;
+            position: relative;
+            z-index: 1;
+            pointer-events: none;
+            height: 0;
+            overflow: hidden;
+        }
+
+        .about-inner.open {
+            pointer-events: auto;
+            height: auto;
+            overflow: visible;
+        }
+
+        .about-inner.closing {
+            height: auto;
+            overflow: visible;
+        }
+
+        .about-inner .about-file {
+            opacity: 0;
+            transform: scale(0.92) translateY(-12px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            width: 100%;
+        }
+
+        .about-inner.open {
+            pointer-events: auto;
+        }
+
+        .about-inner.open .about-file {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        .about-inner.closing .about-file {
+            opacity: 0;
+            transform: scale(0.92) translateY(-12px);
+        }
+
+        .about-file {
+            width: 100%;
+            background: #0d0d0d;
+            border: 1px solid #1a1a1a;
+        }
+
+        .about-file-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #141414;
+            border-bottom: 1px solid #1a1a1a;
+            font-size: 10px;
+            color: #555;
+            letter-spacing: 1px;
+        }
+
+        .about-file-head .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #222;
+            cursor: pointer;
+        }
+
+        .about-file-head .dot.r { background: #ff5f56; }
+        .about-file-head .dot.y { background: #ffbd2e; }
+        .about-file-head .dot.g { background: #27c93f; }
+
+        .about-file-head .fname {
+            color: #666;
+            margin-left: 4px;
+        }
+
+        .about-file-body {
+            max-height: 240px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            padding: 14px 14px 16px;
+            font-size: 11px;
+            line-height: 1.8;
+            color: #999;
+            text-align: left;
+        }
+
+        .about-file-body::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .about-file-body::-webkit-scrollbar-track {
+            background: #111;
+        }
+
+        .about-file-body::-webkit-scrollbar-thumb {
+            background: #333;
+        }
+
+        .about-file-body .hl { color: #ccc; }
+        .about-file-body .gr { color: #4ade80; }
+        .about-file-body .bl { color: #60a5fa; }
+
+        .about-lang {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .about-lang a {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .about-inner.open .about-lang a {
+            opacity: 0.5;
+            transform: translateY(0);
+        }
+
+        .about-inner.open .about-lang a:nth-child(1) { transition-delay: 0.08s; }
+        .about-inner.open .about-lang a:nth-child(2) { transition-delay: 0.16s; }
+        .about-inner.open .about-lang a:nth-child(3) { transition-delay: 0.24s; }
+        .about-inner.open .about-lang a:nth-child(4) { transition-delay: 0.32s; }
+        .about-inner.open .about-lang a:nth-child(5) { transition-delay: 0.40s; }
+
+        .about-inner.closing .about-lang a {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            transition-delay: 0s !important;
+        }
+
+        .about-lang svg, .about-lang img {
+            width: 28px;
+            height: 28px;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            display: block;
+        }
+
+        .about-lang a:hover svg, .about-lang a:hover img {
+            opacity: 0.9;
         }
     </style>
 </head>
 
 <body>
+    <a href="/" class="back-link">BACK</a>
     <main class="container">
-        <section class="bios-box discord-section">
-            <span class="bios-label">about</span>
-            <nav class="bios-nav">
-                <a href="/" class="bios-link">HOME</a>
-                <a href="/discord" class="bios-link">DISCORD</a>
-            </nav>
-            <div class="bios-content about-content">
-                <img class="about-avatar" src="../assets/nen4chan.png" alt="nenquen">
-
-                <div class="about-name">>> NENQUEN <<</div>
-
-                <div class="about-bio">
-                    <div class="about-bio-title">// BIO</div>
-                    <p>Hello, I'm nenquen. I make things, break things, and sometimes fix them.</p>
-                    <p>This site is my little corner of the internet. Thanks for stopping by.</p>
+        <div class="about-wrap">
+            <div class="icons-row">
+                <div class="file-icon" id="fileIcon">
+                    <img src="../assets/images/txt-icon.svg" alt="aboutme.txt" width="64" height="74">
+                    <span class="file-label">aboutme.txt</span>
                 </div>
-
-                <div class="about-stats">
-                    <div class="info-row"><span class="info-key">FROM</span><span class="info-val">Turkey</span></div>
-                    <div class="info-row"><span class="info-key">DOING</span><span class="info-val">random stuff</span></div>
-                    <div class="info-row"><span class="info-key">SITE</span><span class="info-val">since 2024</span></div>
-                </div>
-
-                <a class="about-link" href="https://github.com/nenquen" target="_blank" rel="noopener noreferrer">GITHUB</a>
             </div>
-        </section>
+
+            <div class="about-inner" id="aboutContent">
+                <div class="about-file">
+                    <div class="about-file-head">
+                        <span class="dot r"></span>
+                        <span class="dot y"></span>
+                        <span class="dot g"></span>
+                        <span class="fname">aboutme.txt</span>
+                    </div>
+                    <div class="about-file-body">
+                        Hello! I'm <span class="hl">nenquen</span>, my real name is <span class="hl">Baran</span>. I'm <span id="age">18</span> years old and I live in <span class="hl">Turkey</span>.<br><br>
+                            I'm interested in the <span class="gr">GoldSrc</span> engine, it really catches my attention. Other than that, I do <span class="bl">website design</span>.<br><br>
+                        In my free time I play games like <span class="hl">Roblox</span>, <span class="hl">Friday Night Funkin'</span>, <span class="hl">osu!</span>, <span class="hl">DDNet</span>, and <span class="hl">Counter-Strike</span>.<br><br>
+                        My coding knowledge isn't very advanced, but I know and understand a bit of <span class="gr">C</span>, <span class="gr">C++</span>, <span class="gr">JavaScript</span>, <span class="gr">HTML</span>, and <span class="gr">Python</span>.<br><br>
+                            Sometimes I <span class="gr">vibecode</span>, just open my editor and see what happens. It's fun and keeps things loose.<br><br>
+                        You can check out my projects on <span class="bl">GitHub</span>! Feel free to use anything that catches your attention, and if you have any suggestions, I accept <span class="hl">pull requests</span>!
+                    </div>
+                </div>
+
+                <div class="about-lang">
+                    <a href="https://en.wikipedia.org/wiki/C_(programming_language)" target="_blank" title="C">
+                        <img src="../assets/images/c.svg" alt="C">
+                    </a>
+                    <a href="https://en.wikipedia.org/wiki/C%2B%2B" target="_blank" title="C++">
+                        <img src="../assets/images/cplusplus.svg" alt="C++">
+                    </a>
+                    <a href="https://en.wikipedia.org/wiki/JavaScript" target="_blank" title="JavaScript">
+                        <img src="../assets/images/javascript.svg" alt="JavaScript">
+                    </a>
+                    <a href="https://en.wikipedia.org/wiki/HTML5" target="_blank" title="HTML5">
+                        <img src="../assets/images/html5.svg" alt="HTML5">
+                    </a>
+                    <a href="https://en.wikipedia.org/wiki/Python_(programming_language)" target="_blank" title="Python">
+                        <img src="../assets/images/python.svg" alt="Python">
+                    </a>
+                </div>
+            </div>
+        </div>
     </main>
+
+    <script>
+        const icon = document.getElementById('fileIcon');
+        const content = document.getElementById('aboutContent');
+        const iconsRow = document.querySelector('.icons-row');
+        const body = document.body;
+
+        let selected = false;
+
+        icon.addEventListener('click', (e) => {
+            if (e.detail === 1) {
+                selected = !selected;
+                icon.classList.toggle('selected', selected);
+            }
+        });
+
+        icon.addEventListener('dblclick', () => {
+            icon.classList.remove('selected', 'reopening');
+            void icon.offsetHeight;
+            icon.classList.add('opening');
+            setTimeout(() => {
+                iconsRow.classList.add('hidden');
+                icon.classList.add('hidden');
+                content.classList.add('open');
+                body.classList.add('scrollable');
+            }, 350);
+        });
+
+        document.querySelector('.about-file-head .dot.r').addEventListener('click', () => {
+            content.classList.add('closing');
+            content.classList.remove('open');
+            body.classList.remove('scrollable');
+            setTimeout(() => {
+                icon.classList.remove('hidden', 'opening', 'reopening', 'selected');
+                iconsRow.classList.remove('hidden');
+                void icon.offsetHeight;
+                icon.classList.add('reopening');
+                selected = false;
+                content.classList.remove('closing');
+            }, 400);
+        });
+
+        (() => {
+            const el = document.querySelector('.about-file-body');
+            if (!el) return;
+
+            let target = el.scrollTop;
+            let current = el.scrollTop;
+            let animating = false;
+
+            function animate() {
+                current += (target - current) * 0.1;
+                el.scrollTop = current;
+                if (Math.abs(target - current) > 0.5) {
+                    requestAnimationFrame(animate);
+                } else {
+                    animating = false;
+                }
+            }
+
+            el.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                target = Math.max(0, Math.min(target + e.deltaY, el.scrollHeight - el.clientHeight));
+                if (!animating) {
+                    animating = true;
+                    current = el.scrollTop;
+                    animate();
+                }
+            }, { passive: false });
+        })();
+    </script>
+    <script src="../assets/javascript/birthday.js" defer></script>
 </body>
 
 </html>
