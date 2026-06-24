@@ -4,79 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>404 - nenquen</title>
-    <meta name="theme-color" content="#111111">
+    <meta name="theme-color" content="#0414a7">
     <link rel="icon" href="assets/images/favicon.png" type="image/png">
-    <link rel="stylesheet" href="assets/styles.css">
+    <link href='https://fonts.googleapis.com/css?family=VT323' rel='stylesheet'>
     <style>
+        * { box-sizing: border-box; }
+
+        body, h1, h2, h3, h4, p, a { color: #e0e2f4; }
+        body, p { font: normal 20px/1.25rem 'VT323', monospace; margin: 0; }
+        h1 { font: normal 2.75rem/1.05em 'VT323', monospace; margin: 0; }
+        body { background: #0414a7; padding: 20px; min-height: 100vh; }
+
         .container {
-            max-width: 480px;
+            width: 90%;
+            margin: auto;
+            max-width: 640px;
         }
 
-        .error-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        .bsod {
+            padding-top: 10%;
+        }
+
+        .bsod .neg {
             text-align: center;
-            gap: 16px;
-            padding: 20px 10px;
+            color: #0414a7;
         }
 
-        .error-code {
-            font-size: 48px;
-            color: white;
-            margin: 0;
-            font-weight: normal;
-            line-height: 1;
+        .bsod .neg .bg {
+            background: #aaaaaa;
+            padding: 0 15px 2px 13px;
         }
 
-        .error-code .highlight {
-            background: #333;
-            padding: 0 12px 4px 12px;
+        .bsod .title { margin-bottom: 50px; }
+
+        .bsod .nav {
+            margin-top: 35px;
+            text-align: center;
         }
 
-        .error-desc {
-            font-size: 11px;
-            color: #bbb;
-            line-height: 1.6;
-            margin: 0;
+        .bsod .nav .link {
+            text-decoration: none;
+            padding: 0 9px 2px 8px;
         }
 
-        .error-nav {
-            display: flex;
-            gap: 20px;
-            margin-top: 8px;
-        }
-
-        .error-nav a {
-            font-size: 11px;
-            color: white;
-            text-decoration: underline;
-            cursor: pointer;
-        }
-
-        .error-nav a:hover {
-            color: #999;
+        .bsod .nav .link:hover,
+        .bsod .nav .link:focus {
+            background: #aaaaaa;
+            color: #0414a7;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <section class="bios-box">
-            <span class="bios-label">SYSTEM ERROR</span>
-            <div class="error-section">
-                <h1 class="error-code"><span class="highlight">404</span></h1>
-                <p class="error-desc">
-                    The requested resource was not found on this server.<br>
-                    * Return to the <a href="/">homepage</a>.<br>
-                    * Check the <a href="/about">about</a> page for contact info.
-                </p>
-                <nav class="error-nav">
-                    <a href="/">index</a>
-                    <a href="/about">about</a>
-                    <a href="/discord">discord</a>
-                </nav>
-            </div>
-        </section>
-    </div>
+    <main class="bsod container">
+        <h1 class="neg title"><span class="bg">Error - 404</span></h1>
+        <p>An error has occured, to continue:</p>
+        <p>* Return to our <a href="/" class="link">homepage</a>.<br />
+        * Send us an e-mail about this error and try later.</p>
+        <nav class="nav">
+            <a href="/" class="link">index</a>&nbsp;|&nbsp;<a href="/about" class="link">about</a>
+        </nav>
+    </main>
 </body>
 </html>
