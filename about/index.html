@@ -232,7 +232,6 @@
             max-height: 240px;
             overflow-y: auto;
             overscroll-behavior: contain;
-            scroll-behavior: smooth;
             padding: 14px 14px 16px;
             font-size: 11px;
             line-height: 1.8;
@@ -396,16 +395,6 @@
                 content.classList.remove('closing');
             }, 400);
         });
-
-        (() => {
-            const el = document.querySelector('.about-file-body');
-            if (!el) return;
-
-            el.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                el.scrollBy({ top: e.deltaY, behavior: 'smooth' });
-            }, { passive: false });
-        })();
     </script>
     <script src="../assets/javascript/birthday.js" defer></script>
 </body>
