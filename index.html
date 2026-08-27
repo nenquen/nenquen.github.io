@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nenquen - Personal Website</title>
+    <link rel="icon" href="assets/images/favicon.png" type="image/png">
+    <link rel="stylesheet" href="https://unpkg.com/7.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <meta property="og:title" content="Nenquen - Personal Website">
+    <meta property="og:description" content="Welcome to my personal website!">
+    <meta property="og:image" content="https://nenquen.is-a.dev/assets/images/favicon.png">
+    <meta property="og:url" content="https://nenquen.is-a.dev">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#111111">
+</head>
+<body>
+    <div class="window active main-window" id="mainWindow">
+        <div class="title-bar">
+            <div class="title-bar-text">Welcome</div>
+            <div class="title-bar-controls">
+                <button aria-label="Minimize" id="minimizeMainButton"></button>
+                <button aria-label="Maximize" id="maximizeMainButton"></button>
+                <button aria-label="Close" id="closeMainButton"></button>
+            </div>
+        </div>
+        <div class="window-body has-space">
+            <div class="welcome-message-container">
+                <img src="assets/images/info.png" alt="Info" width="32" height="32">
+                <p id="welcome-message">Welcome to my personal website!</p>
+            </div>
+            <div class="button-row-split">
+                <div class="button-row-left">
+                    <button id="githubButton">
+                        <img src="assets/images/github.png" alt="GitHub" width="16" height="16">
+                        GitHub
+                    </button>
+                    <button id="discordButton">
+                        <img src="assets/images/discord.png" alt="Discord" width="16" height="16">
+                        Discord
+                    </button>
+                </div>
+                <div class="button-row-right">
+                    <button id="aboutButton">About Me</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="window active main-window hidden" id="aboutWindow">
+        <div class="title-bar">
+            <div class="title-bar-text">About Me</div>
+            <div class="title-bar-controls">
+                <button aria-label="Minimize" id="minimizeAboutButton"></button>
+                <button aria-label="Maximize" id="maximizeAboutButton"></button>
+                <button aria-label="Close" id="closeAboutButton"></button>
+            </div>
+        </div>
+        <div class="window-body has-space">
+            <p>Hello! I'm nenquen, my real name is Baran. I'm 19 years old and I live in Turkey.</p>
+            <p>I'm interested in the GoldSrc engine, it really catches my attention. Other than that, I do website design.</p>
+            <p>In my free time I play games like Roblox, Friday Night Funkin', osu!, DDNet, and Counter-Strike.</p>
+            <p>My coding knowledge isn't very advanced, but I know and understand a bit of C, C++, JavaScript, HTML, and Python. Sometimes I just open my editor and see what happens.</p>
+            <p>You can check out my projects on <a href="https://github.com/nenquen" class="external-link">GitHub</a>! Feel free to use anything that catches your attention, and if you have any suggestions, I accept pull requests!</p>
+            <fieldset>
+                <legend>Languages</legend>
+                <div class="languages-grid">
+                    <a href="https://en.wikipedia.org/wiki/C_(programming_language)" class="external-link language-icon-link">
+                        <img src="assets/images/c.svg" alt="C" width="48" height="48">
+                    </a>
+                    <a href="https://en.wikipedia.org/wiki/C%2B%2B" class="external-link language-icon-link">
+                        <img src="assets/images/cplusplus.svg" alt="C++" width="48" height="48">
+                    </a>
+                    <a href="https://en.wikipedia.org/wiki/JavaScript" class="external-link language-icon-link">
+                        <img src="assets/images/javascript.svg" alt="JavaScript" width="48" height="48">
+                    </a>
+                    <a href="https://en.wikipedia.org/wiki/HTML5" class="external-link language-icon-link">
+                        <img src="assets/images/html5.svg" alt="HTML5" width="48" height="48">
+                    </a>
+                    <a href="https://en.wikipedia.org/wiki/Python_(programming_language)" class="external-link language-icon-link">
+                        <img src="assets/images/python.svg" alt="Python" width="48" height="48">
+                    </a>
+                </div>
+            </fieldset>
+            <div class="button-row-right">
+                <button id="backButton">Back</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="window active main-window hidden" id="discordWindow">
+        <div class="title-bar">
+            <div class="title-bar-text">
+                <img src="assets/images/discord.png" alt="Discord" width="16" height="16">
+                Discord Server
+            </div>
+            <div class="title-bar-controls">
+                <button aria-label="Minimize" id="minimizeDiscordButton"></button>
+                <button aria-label="Maximize" id="maximizeDiscordButton"></button>
+                <button aria-label="Close" id="closeDiscordButton"></button>
+            </div>
+        </div>
+        <div class="window-body has-space">
+            <div class="discord-server-container">
+                <div class="discord-server-icon">
+                    <img id="discordServerIcon" src="assets/images/discord.png" alt="Discord Server" width="48" height="48">
+                </div>
+                <div class="discord-server-info">
+                    <h3 id="discordServerName">Loading...</h3>
+                    <div class="discord-stats">
+                        <div class="discord-info-row">
+                            <img src="assets/images/people.png" alt="Members" width="16" height="16">
+                            <span id="discordMemberCount">Loading...</span>
+                        </div>
+                        <div class="discord-info-row">
+                            <img src="assets/images/online.png" alt="Online" width="16" height="16">
+                            <span id="discordOnlineCount">Loading...</span>
+                        </div>
+                        <div class="discord-info-row">
+                            <img src="assets/images/boost.png" alt="Boosts" width="16" height="16">
+                            <span id="discordBoostCount">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="button-row-right">
+                <button id="joinDiscordButton">Join Server</button>
+                <button id="backDiscordButton">Back</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="window active main-window hidden" id="warningWindow">
+        <div class="title-bar">
+            <div class="title-bar-text">
+                <img src="assets/images/warningpart.png" alt="Warning" width="16" height="16">
+                Security Warning
+            </div>
+            <div class="title-bar-controls">
+                <button aria-label="Minimize" id="minimizeWarningButton"></button>
+                <button aria-label="Maximize" id="maximizeWarningButton"></button>
+                <button aria-label="Close" id="closeWarningButton"></button>
+            </div>
+        </div>
+        <div class="window-body has-space">
+            <div class="warning-message-container">
+                <img src="assets/images/warning.png" alt="Warning" width="32" height="32">
+                <p id="warning-message">You are about to leave this site. Are you sure you want to continue?</p>
+            </div>
+            <div class="button-row-right">
+                <button id="confirmWarningButton" class="default">Yes</button>
+                <button id="cancelWarningButton">No</button>
+            </div>
+        </div>
+    </div>
+    
+
+    <div class="overlay hidden" id="overlay"></div>
+
+    <script src="assets/images/js/script.js"></script>
+</body>
+</html>
