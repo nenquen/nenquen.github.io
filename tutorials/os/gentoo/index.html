@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=1280" name="viewport"/>
-<title>Gentoo Öğreniyorum</title>
+<title>Learning Gentoo</title>
 <link href="https://unpkg.com/7.css@0.21.1/dist/7.css" integrity="sha384-WN2QoZVHe/0w3aOmuNlv18gZn4NKrLXxgsUtsLAXPV1zCE/49AFfl07gQ2knrObx" crossorigin="anonymous" rel="stylesheet"/>
 <style>
 @font-face{font-family:'SegoeUI';src:url('../../../assets/fonts/SegoeUI.ttf') format('truetype')}@font-face{font-family:'Roboto';src:url('../../../assets/fonts/Roboto-Regular.ttf') format('truetype')}:root{font-family:'SegoeUI','Roboto',Tahoma,Geneva,Verdana,sans-serif}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#2e2843 0,#4a3d6e 100%);color:#111;font-size:14px;font-family:'SegoeUI','Roboto',Tahoma,Geneva,Verdana,sans-serif}.wrap{max-width:1280px;margin:0 auto;padding:24px 18px 54px}.desktop-title{margin-bottom:14px}.desktop-title .window-body{padding:18px 20px;background:#fff}.desktop-title h1{font-size:30px;margin:0 0 7px;color:#2e2843}
 .gentoo-logo{height:42px;width:auto;vertical-align:middle;margin-right:12px;filter:drop-shadow(0 1px 2px rgba(46,40,67,.4))}.desktop-title p{margin:4px 0;max-width:950px}.pill{display:inline-block;margin:5px 6px 0 0;padding:3px 8px;border:1px solid #a99bc9;border-radius:3px;background:linear-gradient(#fff,#ece7f6);font-size:12px;color:#3e355a}.grid{display:grid;grid-template-columns:250px 1fr;gap:15px;align-items:start}.side.window{position:sticky;top:12px}.side .window-body{padding:8px;background:#f1ecfa}.side strong{display:block;padding:3px 6px 7px;color:#3e355a}.side a{display:block;padding:5px 8px;color:#54487A;text-decoration:none;border-radius:2px}.side a:hover{background:#e3dcf2;text-decoration:underline}.section-window{margin-bottom:15px}.section-window>.window-body{padding:18px 20px;background:#fff}.section-window h2{margin:0 0 10px;font-size:22px;color:#3e355a}.section-window h3{margin:20px 0 7px;font-size:16px;color:#493f6a}.section-window p,.section-window li{color:#222;line-height:1.62}.callout{margin:14px 0;padding:10px 12px;border:1px solid #c3b6dd;background:#f3eefb}.callout.warn{background:#fff4e8;border-color:#e0b079}.callout.info{background:#f1ecfa;border-color:#a99bc9}.cmd{position:relative;margin:12px 0;border:1px solid #8f9da8;background:#f6f6f6;box-shadow:inset 0 0 0 1px #fff}.cmd .bar{padding:5px 9px;background:linear-gradient(#fdfdfd,#dfe7ed);border-bottom:1px solid #b4c0c8;font-size:11px;color:#536773}.cmd pre{margin:0;padding:11px;overflow:auto;color:#111;background:#fff;font:500 13px/1.45 Consolas,"Courier New",monospace}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.card{padding:12px;border:1px solid #c3b6dd;background:linear-gradient(#fff,#f3eefb)}.checklist label{display:flex;gap:8px;align-items:flex-start;padding:5px 0}.checklist input{margin-top:4px}.kbd,code{font-family:Consolas,"Courier New",monospace}.kbd{padding:1px 5px;border:1px solid #aebac2;background:#f4f4f4;border-radius:3px}
-/* Başlık çubuğunu içeriksiz, düz bir üst bar olarak göster. */
+/* Show the title bar as a flat, content-free top bar. */
 .window .title-bar{display:block;border-radius:var(--w7-w-bdr) var(--w7-w-bdr) 0 0;height:var(--w7-w-space);min-height:var(--w7-w-space);padding:0}
 .window .title-bar .title-bar-text,.window .title-bar .title-bar-controls{display:none}
 .window .window-body{margin-top:0!important}
@@ -18,13 +18,13 @@
 .window{border-radius:var(--w7-w-bdr);--w7-w-bd:#9d8cdb;--w7-w-bg:#54487A;box-shadow:0 0 12px 2px rgba(0,0,0,.5)}
 .window:before{border-radius:var(--w7-w-bdr);background-color:var(--w7-w-bg);box-shadow:inset 0 0 0 1px #c3b2e8}.window-body{box-shadow:0 0 0 1px #e7e0f5}
 
-/* Karar noktası seçicileri */
+/* Decision-point pickers */
 .pickerbox{margin:12px 0 4px}.pickerbox legend{color:#3e355a}.picker-row{display:flex;flex-wrap:wrap;gap:8px 18px}.picker-row label{font-size:13px;cursor:pointer}
-/* Varsayılan: her şey görünür. Seçime göre gizlenecekleri kapat. */
+/* Default: everything visible. Hide the ones not matching the selection. */
 .opt{display:block}
 body[data-init="openrc"] .opt.init.systemd{display:none}
 body[data-init="systemd"] .opt.init.openrc{display:none}
-/* Masaüstü: seçilen DE dışındaki DE bloklarını gizle; server seçilince DE ortak bloklarını gizle */
+/* Desktop: hide the DE blocks other than the selected one; hide common DE blocks when server is chosen */
 body[data-desktop="kde"] .opt.desktop.gnome,
 body[data-desktop="kde"] .opt.desktop.xfce,
 body[data-desktop="kde"] .opt.desktop.lxqt,
@@ -44,7 +44,7 @@ body[data-desktop="lxqt"] .opt.desktop.server,
 body[data-desktop="server"] .opt.desktop.de{display:none}
 body[data-firmware="gpt"] .opt.firmware.mbr{display:none}
 body[data-firmware="mbr"] .opt.firmware.gpt{display:none}
-/* Grafik: seçilen dışındaki GPU bloklarını gizle */
+/* Graphics: hide the GPU blocks other than the selected one */
 body[data-gpu="nvidia"] .opt.gpu.amd,
 body[data-gpu="nvidia"] .opt.gpu.intel,
 body[data-gpu="nvidia"] .opt.gpu.none,
@@ -57,7 +57,7 @@ body[data-gpu="intel"] .opt.gpu.none,
 body[data-gpu="none"] .opt.gpu.real{display:none}
 body[data-libc="glibc"] .opt.libc.musl{display:none}
 body[data-libc="musl"] .opt.libc.glibc{display:none}
-/* Pilleri de seçime göre göster/gizle. İstenmeyenler gizlenir, seçilen gösterilir. */
+/* Show/hide the pills by selection. Unneeded ones are hidden, the selected one is shown. */
 .pill{display:inline-block}
 body[data-init="openrc"] .pill.only-init-systemd,
 body[data-init="systemd"] .pill.only-init-openrc,
@@ -87,7 +87,7 @@ body[data-libc="glibc"] .pill.only-libc-musl,
 body[data-libc="musl"] .pill.only-libc-glibc,
 body[data-gpu="none"] .pill.only-gpu{display:none}
 
-/* Gentoo Defteri: bölüm başlıkları seçime göre değişir */
+/* Gentoo Notebook: section titles change with the selection */
 .navdef{display:none}
 body:not([data-firmware]) .nv-fw-gpt,
 body:not([data-desktop]) .nv-ds-kde,
@@ -103,15 +103,15 @@ body[data-gpu="nvidia"] .nv-gpu-nvidia,
 body[data-gpu="amd"] .nv-gpu-amd,
 body[data-gpu="intel"] .nv-gpu-intel,
 body[data-gpu="none"] .nv-gpu-none{display:inline}
-/* Grafik sürücüsü bölümü: GPU yoksa tümden gizle */
+/* Graphics driver section: hide entirely when there is no GPU */
 body[data-gpu="none"] section#nvidia,
 body[data-gpu="none"] .navsec-gpu{display:none}
-/* Masaüstü bölümü: masaüstü seçilmezse (server) tümden gizle */
+/* Desktop section: hide entirely when no desktop is chosen (server) */
 body[data-desktop="server"] section#desktop,
 body[data-desktop="server"] .navlink-desktop{display:none}
-/* musl seçilince masaüstü seçimi pasifleştir */
+/* When musl is selected, disable the desktop picker */
 body[data-libc="musl"] .pickerbox .picker-row input[name="desktop"]{pointer-events:none;opacity:.4}
-/* musl seçilince grafik kartı seçimi de pasifleştir */
+/* When musl is selected, also disable the graphics card picker */
 body[data-libc="musl"] .pickerbox .picker-row input[name="gpu"]{pointer-events:none;opacity:.4}
 
 
@@ -122,7 +122,7 @@ body[data-libc="musl"] .pickerbox .picker-row input[name="gpu"]{pointer-events:n
 <div class="wrap" id="top">
 <header class="window active desktop-title" id="lab-window">
 <div class="title-bar">
-<div class="title-bar-text">Gentoo Öğreniyorum</div>
+<div class="title-bar-text">Learning Gentoo</div>
 <div class="title-bar-controls">
 <button aria-label="Minimize"></button>
 <button aria-label="Maximize"></button>
@@ -130,24 +130,24 @@ body[data-libc="musl"] .pickerbox .picker-row input[name="gpu"]{pointer-events:n
 </div>
 </div>
 <div class="window-body has-space">
-<h1><img src="../../../assets/images/gentoo-logo.svg" alt="Gentoo Öğreniyorum" class="gentoo-logo"></h1>
-<p>Bu bir "komutu kopyala, enter'a bas, sonra patlarsa düşün" rehberi değil. Yaptığımız her işi normal bir dille anlatıyorum. Amacım, bir yerde hata çıkarsa nerede olduğunu ve ne yaptığını anlamanı sağlamak.</p>
-<p>Aşağıdaki seçimleri yap; rehber adımları buna göre değişsin. Seçimler tarayıcında hatırlanır.</p>
+<h1><img src="../../../assets/images/gentoo-logo.svg" alt="Learning Gentoo" class="gentoo-logo"></h1>
+<p>This is not a "copy the command, hit enter, and figure it out if it breaks" guide. I explain each step in plain language, so that if something goes wrong, you understand where you are and what you're doing.</p>
+<p>Make the choices below and the steps will change to match them. Your choices are remembered in this browser.</p>
 <fieldset class="pickerbox">
-<legend>Init sistemi</legend>
+<legend>Init system</legend>
 <div class="picker-row">
 <div><input id="init-openrc" checked type="radio" name="init" value="openrc"><label for="init-openrc">OpenRC</label></div>
 <div><input id="init-systemd" type="radio" name="init" value="systemd"><label for="init-systemd">systemd</label></div>
 </div>
 </fieldset>
 <fieldset class="pickerbox">
-<legend>Masaüstü / AMA</legend>
+<legend>Desktop / Purpose</legend>
 <div class="picker-row">
 <div><input id="desktop-kde" checked type="radio" name="desktop" value="kde"><label for="desktop-kde">KDE Plasma</label></div>
 <div><input id="desktop-gnome" type="radio" name="desktop" value="gnome"><label for="desktop-gnome">GNOME</label></div>
 <div><input id="desktop-xfce" type="radio" name="desktop" value="xfce"><label for="desktop-xfce">XFCE</label></div>
 <div><input id="desktop-lxqt" type="radio" name="desktop" value="lxqt"><label for="desktop-lxqt">LXQt</label></div>
-<div><input id="desktop-server" type="radio" name="desktop" value="server"><label for="desktop-server">Server (amaç)</label></div>
+<div><input id="desktop-server" type="radio" name="desktop" value="server"><label for="desktop-server">Server (purpose)</label></div>
 </div>
 </fieldset>
 <fieldset class="pickerbox">
@@ -158,188 +158,188 @@ body[data-libc="musl"] .pickerbox .picker-row input[name="gpu"]{pointer-events:n
 </div>
 </fieldset>
 <fieldset class="pickerbox">
-<legend>Grafik kartı</legend>
+<legend>Graphics card</legend>
 <div class="picker-row">
 <div><input id="gpu-nvidia" checked type="radio" name="gpu" value="nvidia"><label for="gpu-nvidia">NVIDIA</label></div>
 <div><input id="gpu-amd" type="radio" name="gpu" value="amd"><label for="gpu-amd">AMD</label></div>
 <div><input id="gpu-intel" type="radio" name="gpu" value="intel"><label for="gpu-intel">Intel</label></div>
-<div><input id="gpu-none" type="radio" name="gpu" value="none"><label for="gpu-none">Yok / headless</label></div>
+<div><input id="gpu-none" type="radio" name="gpu" value="none"><label for="gpu-none">None / headless</label></div>
 </div>
 </fieldset>
 <fieldset class="pickerbox">
-<legend>C kütüphanesi (libc)</legend>
+<legend>C library (libc)</legend>
 <div class="picker-row">
 <div><input id="libc-glibc" checked type="radio" name="libc" value="glibc"><label for="libc-glibc">glibc</label></div>
 <div><input id="libc-musl" type="radio" name="libc" value="musl"><label for="libc-musl">musl</label></div>
 </div>
 </fieldset>
-<p style="margin-top:14px"><span class="pill">AMD64</span><span class="pill only-firmware-gpt">UEFI + GPT</span><span class="pill only-firmware-mbr">MBR + BIOS</span><span class="pill only-init-openrc">OpenRC</span><span class="pill only-init-systemd">systemd</span><span class="pill only-de-kde">KDE + Wayland</span><span class="pill only-de-gnome">GNOME</span><span class="pill only-de-xfce">XFCE</span><span class="pill only-de-lxqt">LXQt</span><span class="pill only-de-server">Server</span><span class="pill only-libc-glibc">glibc</span><span class="pill only-libc-musl">musl</span><span class="pill only-gpu">Grafik sürücüleri</span></p>
+<p style="margin-top:14px"><span class="pill">AMD64</span><span class="pill only-firmware-gpt">UEFI + GPT</span><span class="pill only-firmware-mbr">MBR + BIOS</span><span class="pill only-init-openrc">OpenRC</span><span class="pill only-init-systemd">systemd</span><span class="pill only-de-kde">KDE + Wayland</span><span class="pill only-de-gnome">GNOME</span><span class="pill only-de-xfce">XFCE</span><span class="pill only-de-lxqt">LXQt</span><span class="pill only-de-server">Server</span><span class="pill only-libc-glibc">glibc</span><span class="pill only-libc-musl">musl</span><span class="pill only-gpu">Graphics drivers</span></p>
 </div></header>
 <div class="grid">
-<aside class="side window active"><div class="title-bar"><div class="title-bar-text">Gentoo Defteri</div><div class="title-bar-controls"><button aria-label="Help"></button></div></div><div class="window-body has-space">
-<strong>Gentoo Defteri</strong>
-<a href="#zihin">Önce mantığını anlayalım</a>
-<a href="#media">Live ortam</a>
-<a href="#disk">Disk &amp; bölümleme</a>
-<a href="#network">İnternet</a>
+<aside class="side window active"><div class="title-bar"><div class="title-bar-text">Gentoo Notebook</div><div class="title-bar-controls"><button aria-label="Help"></button></div></div><div class="window-body has-space">
+<strong>Gentoo Notebook</strong>
+<a href="#zihin">Understand the idea first</a>
+<a href="#media">Live environment</a>
+<a href="#disk">Disk &amp; partitioning</a>
+<a href="#network">Network</a>
 <a href="#stage">Stage 3</a>
 <a href="#chroot">Chroot</a>
 <a href="#portage">Portage</a>
 <a href="#profile">Profile &amp; USE</a>
 <a href="#kernel">Kernel</a>
-<a href="#system">Sistem ayarları</a>
+<a href="#system">System settings</a>
 <a href="#boot"><span class="navdef nv-fw-gpt">GPT / UEFI</span><span class="navdef nv-fw-mbr">MBR / BIOS</span></a>
 <a class="navlink-desktop" href="#desktop"><span class="navdef nv-ds-kde">KDE / Wayland</span><span class="navdef nv-ds-gnome">GNOME</span><span class="navdef nv-ds-xfce">XFCE</span><span class="navdef nv-ds-lxqt">LXQt</span><span class="navdef nv-ds-server">Server</span></a>
-<a class="navsec-gpu" href="#nvidia"><span class="navdef nv-gpu-nvidia">NVIDIA</span><span class="navdef nv-gpu-amd">AMD</span><span class="navdef nv-gpu-intel">Intel</span><span class="navdef nv-gpu-none">Yok</span></a>
-<a href="#firstboot">Tamam mı? Son kontrol</a>
-<a href="#sources">Kaynaklar</a>
+<a class="navsec-gpu" href="#nvidia"><span class="navdef nv-gpu-nvidia">NVIDIA</span><span class="navdef nv-gpu-amd">AMD</span><span class="navdef nv-gpu-intel">Intel</span><span class="navdef nv-gpu-none">None</span></a>
+<a href="#firstboot">Ready? Final check</a>
+<a href="#sources">Sources</a>
 </div></aside>
 <main>
 <section class="window active section-window" id="zihin">
-<div class="title-bar"><div class="title-bar-text">Önce kafaya oturtalım</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Understand the idea first</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Önce kafaya oturtalım</h2>
-<p>Gentoo sana hazır bir masaüstü verip "al kullan" demez. Sistemin parçalarını sen seçersin. Şimdilik şu kavramları tanımak yeterli:</p>
+<h2>Understand the idea first</h2>
+<p>Gentoo won't hand you a ready-made desktop and say "take it". You choose the parts of the system yourself. For now it's enough to know these concepts:</p>
 <div class="two">
-<div class="card"><b>Stage 3</b><br/>Kurmaya başladığımız hazır temel sistem. Her şeyi sıfırdan derleyerek başlamıyoruz.</div>
-<div class="card"><b>Portage</b><br/>Gentoo'nun paket yöneticisi. Ana komutu: <code>emerge</code>.</div>
-<div class="card"><b>USE flags</b><br/>"KDE desteği olsun mu? Bluetooth olsun mu?" gibi seçimleri yapmamızı sağlar.</div>
-<div class="card"><b>Init sistemi</b><br/>Servisleri başlatıp durdurur. Bu rehberde seçtiğin <b>OpenRC</b> (varsayılan) veya <b>systemd</b>'ye göre adımlar değişir.</div>
-<div class="card"><b>Masaüstü / AMA</b><br/>Bir masaüstü ortamı (KDE, GNOME, XFCE, LXQt) ya da amaçsız bir sunucu kurabilirsin. Profile ve kurulacak paketler buna göre değişir.</div>
-<div class="card"><b>libc</b><br/>Standart C kütüphanesi. Varsayılan <b>glibc</b>'dir; <b>musl</b> daha hafiftir ama masaüstü profilleri yoktur. Masaüstü kurmak istemiyorsan (server/headless) musl iyi bir seçimdir.</div>
+<div class="card"><b>Stage 3</b><br/>The ready-made base system we start from. We don't compile everything from scratch.</div>
+<div class="card"><b>Portage</b><br/>Gentoo's package manager. Its main tool: <code>emerge</code>.</div>
+<div class="card"><b>USE flags</b><br/>Let you make choices like "Should I include KDE support? Bluetooth?".</div>
+<div class="card"><b>Init system</b><br/>Starts and stops services. In this guide the steps change based on your choice of <b>OpenRC</b> (default) or <b>systemd</b>.</div>
+<div class="card"><b>Desktop / Purpose</b><br/>You can install a desktop environment (KDE, GNOME, XFCE, LXQt) or a purpose-built server. The profile and installed packages change accordingly.</div>
+<div class="card"><b>libc</b><br/>The standard C library. The default is <b>glibc</b>; <b>musl</b> is lighter but has no desktop profiles. If you don't need a desktop (server/headless), musl is a good choice.</div>
 </div>
-<div class="callout"><b>En önemli tavsiye:</b> Komutları ezberleme. Sürekli "Şu an neredeyim, ne kuruyorum?" diye sor. Disk, chroot, Portage, kernel ve bootloader bambaşka işler. Bunları birbirine karıştırırsan Gentoo seni yaratıcı hata mesajlarıyla karşılar.</div>
-<div class="callout warn opt libc musl"><b>musl uyarısı:</b> musl, Gentoo'da "deneysel" etiketli profillerle gelir ve <b>masaüstü (desktop) profili yoktur</b> — bu, kurulumun mümkün olmadığı anlamına gelmez. KDE/GNOME gibi ortamlar musl üzerinde çalışabilir, ama resmi bir profile dayanmaz; bağımlılık ve USE ayarlarını elle yapman gerekir. Ayrıca Chromium/Chrome gibi bazı kapalı kaynaklar musl ile derlenmez. Masaüstü planlıyorsan önerim glibc'dir.</div>
+<div class="callout"><b>The most important advice:</b> Don't memorize commands. Keep asking "Where am I right now, what am I installing?". Disk, chroot, Portage, kernel and bootloader are very different jobs. If you mix them up, Gentoo will greet you with creative error messages.</div>
+<div class="callout warn opt libc musl"><b>musl warning:</b> musl ships with "experimental" profiles in Gentoo and <b>has no desktop profile</b> — this doesn't mean it can't be installed. Environments like KDE/GNOME can run on musl, but they don't rely on an official profile; you'll set up dependencies and USE flags manually. Also, some closed-source packages like Chromium/Chrome won't build with musl. If you're planning a desktop, my recommendation is glibc.</div>
 </div>
 </section>
 
 <section class="window active section-window" id="media">
-<div class="title-bar"><div class="title-bar-text">Live ortamı açalım</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Open the live environment</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Live ortamı açalım</h2>
-<p>Kuruluma başlamak için çalışan bir ortam lazım. İki seçenek var:</p>
+<h2>Open the live environment</h2>
+<p>To start installing you need a working environment. Two options:</p>
 <div class="two">
-<div class="card"><b>Minimal ISO</b><br/>Sade, terminal ağırlıklı kurulum ortamı.<br/><a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-install-amd64-minimal/" rel="noopener" target="_blank">Güncel Minimal ISO indir</a></div>
-<div class="card"><b>LiveGUI</b><br/>KDE masaüstü ve grafik araçlarıyla gelen canlı ortam. Wi-Fi ve tarayıcı için daha rahat.<br/><a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-livegui-amd64/" rel="noopener" target="_blank">Güncel LiveGUI indir</a></div>
+<div class="card"><b>Minimal ISO</b><br/>A plain, terminal-focused install environment.<br/><a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-install-amd64-minimal/" rel="noopener" target="_blank">Download current Minimal ISO</a></div>
+<div class="card"><b>LiveGUI</b><br/>A live environment with KDE desktop and graphical tools. More comfortable for Wi-Fi and browsing.<br/><a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-livegui-amd64/" rel="noopener" target="_blank">Download current LiveGUI</a></div>
 </div>
-<div class="callout info"><b>Sonra gerekli olacak:</b> Kuracağımız sistemin temeli olan Stage 3 arşivini seçimlerine göre indireceğiz.
-<span class="opt libc glibc init openrc desktop de">glibc + masaüstü + OpenRC: <a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-desktop-openrc/" rel="noopener" target="_blank">Desktop OpenRC Stage 3</a></span>
-<span class="opt libc glibc init systemd desktop de">glibc + masaüstü + systemd: <a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-desktop-systemd/" rel="noopener" target="_blank">Desktop systemd Stage 3</a></span>
+<div class="callout info"><b>You'll need this later:</b> The Stage 3 archive that is the foundation of the system we're going to install, which we'll download based on your choices.
+<span class="opt libc glibc init openrc desktop de">glibc + desktop + OpenRC: <a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-desktop-openrc/" rel="noopener" target="_blank">Desktop OpenRC Stage 3</a></span>
+<span class="opt libc glibc init systemd desktop de">glibc + desktop + systemd: <a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-desktop-systemd/" rel="noopener" target="_blank">Desktop systemd Stage 3</a></span>
 <span class="opt libc glibc desktop server init openrc">glibc + server + OpenRC: <a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-openrc/" rel="noopener" target="_blank">Base OpenRC Stage 3</a></span>
 <span class="opt libc glibc desktop server init systemd">glibc + server + systemd: <a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-systemd/" rel="noopener" target="_blank">Base systemd Stage 3</a></span>
 <span class="opt libc musl init openrc">musl + OpenRC: <a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-musl-openrc/" rel="noopener" target="_blank">musl OpenRC Stage 3</a></span>
 <span class="opt libc musl init systemd">musl + systemd: <a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-musl-systemd/" rel="noopener" target="_blank">musl systemd Stage 3</a></span>
-<br/>Tüm AMD64 dosyaları <a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/" rel="noopener" target="_blank">burada</a>.</div>
-<div class="opt firmware gpt"><p>Live ortamı açtıktan sonra UEFI modunda olduğundan emin ol:</p>
-<div class="cmd"><div class="bar">UEFI kontrolü</div><pre>ls /sys/firmware/efi</pre></div>
-<p>Komut bir şey listeliyorsa tamam. Boşsa yeniden başlat ve boot menüsünden UEFI girişini seç.</p></div>
-<div class="opt firmware mbr"><p>MBR + BIOS kurulumu için canlı ortamı <b>legacy/BIOS</b> modunda açtığından emin ol (UEFI modunda değil).</p></div>
+<br/>All AMD64 files are <a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/" rel="noopener" target="_blank">here</a>.</div>
+<div class="opt firmware gpt"><p>After opening the live environment, make sure you're in UEFI mode:</p>
+<div class="cmd"><div class="bar">UEFI check</div><pre>ls /sys/firmware/efi</pre></div>
+<p>If the command lists something, you're good. If it's empty, reboot and select the UEFI entry from the boot menu.</p></div>
+<div class="opt firmware mbr"><p>For an MBR + BIOS install, make sure you open the live environment in <b>legacy/BIOS</b> mode (not UEFI mode).</p></div>
 </div>
 </section>
 <section class="window active section-window" id="disk">
-<div class="title-bar"><div class="title-bar-text">Şimdi diski hazırlıyoruz</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Now let's prepare the disk</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Şimdi diski hazırlıyoruz</h2>
-<p>Buradaki tek zor nokta: <b>hangi diskle çalıştığını doğru bulmak.</b> Linux'ta disk adları sisteme göre değişir; bu yüzden rehberde hazır bir disk adı vermiyorum. İşe listeyle başla:</p>
-<div class="cmd"><div class="bar">Diskleri gör</div><pre>lsblk -o NAME,SIZE,MODEL,TYPE,FSTYPE,MOUNTPOINTS</pre></div>
-<p>Çıktıda hedef diski <b>modeline ve kapasitesine</b> göre bul, sonra o diskin adıyla bölümleme aracını aç:</p>
-<div class="cmd"><div class="bar">Bölümle · yer tutucuyu gerçek disk adıyla değiştir</div><pre>fdisk &lt;HEDEF_DISK&gt;</pre></div>
+<h2>Now let's prepare the disk</h2>
+<p>The only tricky thing here: <b>figuring out which disk you're working with.</b> In Linux, disk names vary from system to system, so I don't hard-code a disk name in this guide. Start by listing them:</p>
+<div class="cmd"><div class="bar">See the disks</div><pre>lsblk -o NAME,SIZE,MODEL,TYPE,FSTYPE,MOUNTPOINTS</pre></div>
+<p>In the output, find the target disk by its <b>model and capacity</b>, then open the partitioning tool with that disk's name:</p>
+<div class="cmd"><div class="bar">Partition · replace the placeholder with the real disk name</div><pre>fdisk &lt;TARGET_DISK&gt;</pre></div>
 <div class="opt firmware gpt">
-<p>GPT + UEFI seçtiğine göre basit bir şema öneriyorum:</p>
-<ul><li><b>EFI</b> → 1 GiB → <code>t</code> ile "EFI System" (1)</li><li><b>Swap</b> → isteğe bağlı → "Linux swap" (19)</li><li><b>Root</b> → kalan alan → "Linux filesystem" (20)</li></ul>
-<p>Bölümleri oluşturduktan sonra gerçek bölüm adlarını öğrenmek için listeyi tekrar aç:</p>
-<div class="cmd"><div class="bar">Bölümleri tekrar gör</div><pre>lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS</pre></div>
-<div class="callout warn"><b>Tahmin yok.</b> Aşağıdaki üç yer tutucuyu (<code>&lt;EFI_BOLUMU&gt;</code>, <code>&lt;SWAP_BOLUMU&gt;</code>, <code>&lt;ROOT_BOLUMU&gt;</code>) az önce <code>lsblk</code>'ten aldığın gerçek adlarla değiştir:</div>
-<div class="cmd"><div class="bar">Dosya sistemleri oluştur ve bağla</div><pre>mkfs.fat -F 32 &lt;EFI_BOLUMU&gt;
-mkswap &lt;SWAP_BOLUMU&gt;
-mkfs.ext4 &lt;ROOT_BOLUMU&gt;
-swapon &lt;SWAP_BOLUMU&gt;
+<p>Since you chose GPT + UEFI, I recommend a simple scheme:</p>
+<ul><li><b>EFI</b> → 1 GiB → with <code>t</code> set to "EFI System" (1)</li><li><b>Swap</b> → optional → "Linux swap" (19)</li><li><b>Root</b> → the remaining space → "Linux filesystem" (20)</li></ul>
+<p>After creating the partitions, list again to learn the real partition names:</p>
+<div class="cmd"><div class="bar">See the partitions again</div><pre>lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS</pre></div>
+<div class="callout warn"><b>No guessing.</b> Replace these three placeholders (<code>&lt;EFI_PART&gt;</code>, <code>&lt;SWAP_PART&gt;</code>, <code>&lt;ROOT_PART&gt;</code>) with the real names you got from <code>lsblk</code>:</div>
+<div class="cmd"><div class="bar">Create filesystems and mount</div><pre>mkfs.fat -F 32 &lt;EFI_PART&gt;
+mkswap &lt;SWAP_PART&gt;
+mkfs.ext4 &lt;ROOT_PART&gt;
+swapon &lt;SWAP_PART&gt;
 mkdir -p /mnt/gentoo
-mount &lt;ROOT_BOLUMU&gt; /mnt/gentoo
+mount &lt;ROOT_PART&gt; /mnt/gentoo
 mkdir -p /mnt/gentoo/efi
-mount &lt;EFI_BOLUMU&gt; /mnt/gentoo/efi</pre></div>
+mount &lt;EFI_PART&gt; /mnt/gentoo/efi</pre></div>
 </div>
 <div class="opt firmware mbr">
-<p>MBR + BIOS seçtiğine göre EFI bölümü olmaz; bootloader doğrudan diskin ilk bölümünden önceki önyükleme alanına yazılır. <b>İlk bölüm en az 1 MiB boşluk bırakacak şekilde (sector 2048'den) başlamalı.</b> Basit bir şema öneriyorum:</p>
-<ul><li><b>Root + /boot</b> → tüm alan → "Linux" (83)</li><li><b>Swap</b> → isteğe bağlı → "Linux swap" (82)</li></ul>
-<p><b>Not:</b> MBR şemasında ayrı bir EFI bölümü gerekmez. Swap'ı kullanmak istemiyorsan yer tutucusunu atla.</p>
-<div class="cmd"><div class="bar">Bölümleri tekrar gör</div><pre>lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS</pre></div>
-<div class="callout warn"><b>Tahmin yok.</b> Aşağıdaki yer tutucuları (<code>&lt;SWAP_BOLUMU&gt;</code>, <code>&lt;ROOT_BOLUMU&gt;</code>) gerçek adlarla değiştir. MBR'de /boot ayrı değilse root'a bağlanır:</div>
-<div class="cmd"><div class="bar">Dosya sistemleri oluştur ve bağla</div><pre>mkswap &lt;SWAP_BOLUMU&gt;
-mkfs.ext4 &lt;ROOT_BOLUMU&gt;
-swapon &lt;SWAP_BOLUMU&gt;
+<p>Since you chose MBR + BIOS, there is no EFI partition; the bootloader writes directly to the boot area before the first partition. <b>The first partition must start at least 1 MiB in (from sector 2048).</b> I recommend a simple scheme:</p>
+<ul><li><b>Root + /boot</b> → all space → "Linux" (83)</li><li><b>Swap</b> → optional → "Linux swap" (82)</li></ul>
+<p><b>Note:</b> In the MBR scheme no separate EFI partition is needed. If you don't want swap, skip its placeholder.</p>
+<div class="cmd"><div class="bar">See the partitions again</div><pre>lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS</pre></div>
+<div class="callout warn"><b>No guessing.</b> Replace these placeholders (<code>&lt;SWAP_PART&gt;</code>, <code>&lt;ROOT_PART&gt;</code>) with real names. On MBR, if /boot is not separate it mounts into root:</div>
+<div class="cmd"><div class="bar">Create filesystems and mount</div><pre>mkswap &lt;SWAP_PART&gt;
+mkfs.ext4 &lt;ROOT_PART&gt;
+swapon &lt;SWAP_PART&gt;
 mkdir -p /mnt/gentoo
-mount &lt;ROOT_BOLUMU&gt; /mnt/gentoo</pre></div>
+mount &lt;ROOT_PART&gt; /mnt/gentoo</pre></div>
 </div>
-<div class="callout"><b>Ne yaptık?</b> GPT+UEFI'de EFI bölümü bilgisayarın boot edebileceği yer, root bölümü Gentoo'nun dosyaları için, swap da RAM'e yardımcı alan. MBR+BIOS'ta bootloader MBR'ye yazılır, EFI bölümü olmaz.</div>
+<div class="callout"><b>What did we do?</b> With GPT+UEFI, the EFI partition is where the computer can boot from, the root partition holds Gentoo's files, and swap is extra space for RAM. With MBR+BIOS, the bootloader is written to the MBR and there is no EFI partition.</div>
 </div>
 </section>
 <section class="window active section-window" id="network">
-<div class="title-bar"><div class="title-bar-text">İnterneti halledelim</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Let's sort out the network</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>İnterneti halledelim</h2>
-<p>Kurulum internetten dosya indireceği için ağ şart. Önce bağlantı var mı bak:</p>
-<div class="cmd"><div class="bar">Bağlantı var mı?</div><pre>ping -c 3 gentoo.org</pre></div>
-<h3>Wi-Fi ile bağlanıyorsan</h3>
-<div class="cmd"><div class="bar">Kablosuz arayüzü bul</div><pre>ip link
+<h2>Let's sort out the network</h2>
+<p>Since the installation downloads files from the internet, network is required. First check whether you have a connection:</p>
+<div class="cmd"><div class="bar">Is there a connection?</div><pre>ping -c 3 gentoo.org</pre></div>
+<h3>If you're connecting over Wi-Fi</h3>
+<div class="cmd"><div class="bar">Find the wireless interface</div><pre>ip link
 iw dev</pre></div>
-<p>Arayüz adı çoğunlukla <code>wlp...</code> ile başlar. İsme takılma; asıl mesele <code>iw dev</code> ile kartını bulmak.</p>
-<div class="callout info"><b>Wi-Fi neden bazen çalışmaz?</b> Üç parça bir arada lazım: kernel sürücüsü, cihazın firmware'i ve bir bağlantı yöneticisi. Biri eksikse bağlantı kurulmaz.</div>
-<h3>En kolay yol: NetworkManager + nmtui</h3>
-<p>Önce <b>Live ortamda</b> bağlan; Stage 3 ve paketleri henüz kurmadan indirmemiz gerekiyor. LiveGUI kullanıyorsan ağ simgesinden bağlanabilirsin, terminalden de <code>nmtui</code> açabilirsin. NetworkManager çalışmıyorsa başlat:</p>
-<div class="cmd"><div class="bar">NetworkManager'ı kontrol et / başlat</div><pre>rc-service NetworkManager status
+<p>The interface name usually starts with <code>wlp...</code>. Don't get hung up on the name; the point is to find your card with <code>iw dev</code>.</p>
+<div class="callout info"><b>Why does Wi-Fi sometimes not work?</b> You need three pieces together: a kernel driver, the device firmware, and a connection manager. If one is missing, the connection won't start.</div>
+<h3>The easiest way: NetworkManager + nmtui</h3>
+<p>First connect in the <b>live environment</b>; we need to download the Stage 3 and packages before installing them. If you're using LiveGUI you can connect via the network icon, or open <code>nmtui</code> from a terminal. If NetworkManager isn't running, start it:</p>
+<div class="cmd"><div class="bar">Check / start NetworkManager</div><pre>rc-service NetworkManager status
 rc-service NetworkManager start</pre></div>
-<div class="cmd"><div class="bar">Wi-Fi'a bağlan</div><pre>nmtui</pre></div>
-<p><code>nmtui</code>'de <b>Activate a connection</b> → Wi-Fi ağını seç → parolayı gir. Sonra bağlantıyı test et.</p>
-<div class="cmd"><div class="bar">Bağlantıyı test et</div><pre>ping -c 3 gentoo.org</pre></div>
-<h3>Kurulu Gentoo'da Wi-Fi</h3>
-<p>Chroot'a geçtikten sonra NetworkManager'ı kuruyoruz. Bunu ancak Live ortamdan internet çalışıyorsa yap; yoksa Portage paket indiremez. iwd'yi Wi-Fi yardımcısı olarak kullanmak istersen önce <code>iwd</code> USE flag'ini aç:</p>
+<div class="cmd"><div class="bar">Connect to Wi-Fi</div><pre>nmtui</pre></div>
+<p>In <code>nmtui</code>, pick <b>Activate a connection</b> → select the Wi-Fi network → enter the password. Then test the connection.</p>
+<div class="cmd"><div class="bar">Test the connection</div><pre>ping -c 3 gentoo.org</pre></div>
+<h3>Wi-Fi on the installed Gentoo</h3>
+<p>After we move into the chroot, we install NetworkManager. Do this only if the internet works from the live environment; otherwise Portage can't download packages. If you want to use iwd as the Wi-Fi helper, turn on the <code>iwd</code> USE flag first:</p>
 <div class="cmd"><pre>mkdir -p /etc/portage/package.use
 echo 'net-misc/networkmanager iwd' &gt; /etc/portage/package.use/networkmanager</pre></div>
 <div class="cmd"><div class="bar">NetworkManager + iwd</div><pre>emerge --ask net-misc/networkmanager net-wireless/iwd</pre></div>
-<div class="opt init openrc"><div class="cmd"><div class="bar">Açılışta çalışsın · OpenRC</div><pre>rc-update add NetworkManager default
+<div class="opt init openrc"><div class="cmd"><div class="bar">Run at boot · OpenRC</div><pre>rc-update add NetworkManager default
 rc-service NetworkManager start</pre></div></div>
-<div class="opt init systemd"><div class="cmd"><div class="bar">Açılışta çalışsın · systemd</div><pre>systemctl enable --now NetworkManager</pre></div></div>
-<p>Sonra yine <code>nmtui</code> ile ağa bağlan ve kontrol et:</p>
-<div class="cmd"><div class="bar">Bağlantıyı doğrula</div><pre>nmcli device status
+<div class="opt init systemd"><div class="cmd"><div class="bar">Run at boot · systemd</div><pre>systemctl enable --now NetworkManager</pre></div></div>
+<p>Then connect to the network with <code>nmtui</code> again and check:</p>
+<div class="cmd"><div class="bar">Verify the connection</div><pre>nmcli device status
 ping -c 3 gentoo.org</pre></div>
-<div class="callout warn"><b>Önemli:</b> Aynı anda yalnızca bir ağ yöneticisi çalıştır. NetworkManager kullanırken ayrıca dhcpcd/netifrc'yi aynı arayüzü yönetmesi için açma; sonuçları kafa karıştırıcı olur. Tek yönetici seç.</div>
-<h3>NetworkManager istemiyorsan?</h3>
-<p>Alternatif olarak <code>iwd</code> veya <code>wpa_supplicant</code> kullanabilirsin. İkisi de kimlik doğrulama için gerekli bir daemon; <code>iw</code> tek başına Wi-Fi'a bağlanmaz.</p>
+<div class="callout warn"><b>Important:</b> Run only one network manager at a time. When using NetworkManager, don't also enable dhcpcd/netifrc to manage the same interface; the results get confusing. Pick a single manager.</div>
+<h3>Don't want NetworkManager?</h3>
+<p>Alternatively you can use <code>iwd</code> or <code>wpa_supplicant</code>. Both are daemons needed for authentication; <code>iw</code> alone can't connect to Wi-Fi.</p>
 <div class="two">
-<div class="card"><b>iwd</b><br/>Yeni ve sade bir kablosuz daemon. NetworkManager buna backend olarak da kullanabilir.</div>
-<div class="card"><b>wpa_supplicant</b><br/>Eski ama en yaygın seçenek. Eski rehberlerde bunu sık görürsün.</div>
+<div class="card"><b>iwd</b><br/>A new and simple wireless daemon. NetworkManager can also use it as a backend.</div>
+<div class="card"><b>wpa_supplicant</b><br/>Older but the most common option. You'll often see it in older guides.</div>
 </div>
-<div class="callout"><b>Önerim:</b> Masaüstü kuruyorsan NetworkManager + <code>nmtui</code> ile başla. İstediğin zaman iwd'yi backend olarak ekleyebilirsin.</div>
+<div class="callout"><b>My recommendation:</b> If you're setting up a desktop, start with NetworkManager + <code>nmtui</code>. You can add iwd as a backend whenever you want.</div>
 </div>
 </section>
 <section class="window active section-window" id="stage">
-<div class="title-bar"><div class="title-bar-text">Stage 3 nedir?</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">What is Stage 3?</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Stage 3 nedir?</h2>
-<p>Stage 3, sistemin hazır temel kullanıcı alanı. Doğru arşivi seçimlerine göre seçersin:</p>
+<h2>What is Stage 3?</h2>
+<p>Stage 3 is the ready-made base userspace of the system. Choose the right archive based on your choices:</p>
 <ul>
-<li><b>Masaüstü</b> → <code>desktop</code> sonekli arşiv (KDE/GNOME/XFCE/LXQt fark etmez, aynıdır)</li>
-<li><b>Server</b> → düz <code>stage3-amd64-...</code> arşivi</li>
-<li><b>musl</b> → adında <code>musl</code> geçen arşiv (musl'da masaüstü varyantı yok)</li>
-<li><b>OpenRC/systemd</b> → adında <code>openrc</code> / <code>systemd</code> geçen arşiv</li>
+<li><b>Desktop</b> → archive with the <code>desktop</code> suffix (same for KDE/GNOME/XFCE/LXQt)</li>
+<li><b>Server</b> → plain <code>stage3-amd64-...</code> archive</li>
+<li><b>musl</b> → archive with <code>musl</code> in its name (musl has no desktop variant)</li>
+<li><b>OpenRC/systemd</b> → archive with <code>openrc</code> / <code>systemd</code> in its name</li>
 </ul>
 <div class="cmd"><pre>cd /mnt/gentoo</pre></div>
-<p>İndirilecek dosya adını burada sabitlemiyorum çünkü sürüm değiştikçe değişir. Gerçek adı güncel dizinden al ve kullan.</p>
+<p>I don't pin down the exact filename here because it changes as versions change. Get the real name from the current directory and use it.</p>
 <div class="opt libc glibc desktop de init openrc"><div class="cmd"><pre>tar xpvf stage3-amd64-desktop-openrc-*.tar.xz --xattrs-include='*.*' --numeric-owner</pre></div></div>
 <div class="opt libc glibc desktop de init systemd"><div class="cmd"><pre>tar xpvf stage3-amd64-desktop-systemd-*.tar.xz --xattrs-include='*.*' --numeric-owner</pre></div></div>
 <div class="opt libc glibc desktop server init openrc"><div class="cmd"><pre>tar xpvf stage3-amd64-openrc-*.tar.xz --xattrs-include='*.*' --numeric-owner</pre></div></div>
 <div class="opt libc glibc desktop server init systemd"><div class="cmd"><pre>tar xpvf stage3-amd64-systemd-*.tar.xz --xattrs-include='*.*' --numeric-owner</pre></div></div>
 <div class="opt libc musl init openrc"><div class="cmd"><pre>tar xpvf stage3-amd64-musl-openrc-*.tar.xz --xattrs-include='*.*' --numeric-owner</pre></div></div>
 <div class="opt libc musl init systemd"><div class="cmd"><pre>tar xpvf stage3-amd64-musl-systemd-*.tar.xz --xattrs-include='*.*' --numeric-owner</pre></div></div>
-<p>İstersen önce dosyanın checksum/imza doğrulamasını yapabilirsin. Bir şeyi indirip sistemi üzerine kuruyorsan bunu ihmal etme.</p>
+<p>If you want, verify the file's checksum/signature first. If you're downloading something and installing a system on top of it, don't skip this.</p>
 </div>
 </section>
 <section class="window active section-window" id="chroot">
-<div class="title-bar"><div class="title-bar-text">Chroot: Gentoo’nun içine giriyoruz</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Chroot: entering Gentoo</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Chroot: Gentoo’nun içine giriyoruz</h2>
-<p>Kök dosya sistemin <code>/mnt/gentoo</code>. Önce DNS ayarını ve sanal dosya sistemlerini oraya taşı, sonra içine geç:</p>
+<h2>Chroot: entering Gentoo</h2>
+<p>Your root filesystem is <code>/mnt/gentoo</code>. First move the DNS setting and virtual filesystems there, then enter it:</p>
 <div class="cmd"><pre>cp --dereference /etc/resolv.conf /mnt/gentoo/etc/resolv.conf
 mount --types proc /proc /mnt/gentoo/proc
 mount --rbind /sys /mnt/gentoo/sys
@@ -349,252 +349,251 @@ mount --make-rslave /mnt/gentoo/dev
 chroot /mnt/gentoo /bin/bash
 source /etc/profile
 export PS1="(gentoo) $PS1"</pre></div>
-<div class="callout"><b>Chroot ne oluyor?</b> Sanal makine ya da yeni bir kernel değil. Sadece "root dizinim artık burası" diyerek Gentoo'nun dosya sisteminin içine geçiyorsun. Kernel hâlâ Live ortamınki.</div>
+<div class="callout"><b>What is chroot?</b> It's not a virtual machine or a new kernel. It's simply "my root directory is now here", moving you inside Gentoo's filesystem. The kernel is still the live environment's.</div>
 </div>
 </section>
 <section class="window active section-window" id="portage">
-<div class="title-bar"><div class="title-bar-text">Portage ile tanışalım</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Get to know Portage</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Portage ile tanışalım</h2>
-<p><code>emerge</code>, Portage'ın en çok kullanacağın aracı. Paketleri kaynak koddan derler; istersen binary paket de kullanabilirsin.</p>
-<div class="two"><div class="card"><b>Kur</b><br/><code>emerge --ask paket</code></div><div class="card"><b>Ara</b><br/><code>emerge --search paket</code></div><div class="card"><b>Güncelle</b><br/><code>emerge --ask --update --deep --newuse @world</code></div><div class="card"><b>Önce önizle</b><br/><code>emerge --ask --pretend paket</code></div></div>
-<div class="callout info"><b>İyi alışkanlık:</b> Büyük değişiklikten önce <code>--pretend</code> ile neyin kurulacağını/silineceğini gör. Portage planı gösterir, sen de mantıklı mı diye bakarsın.</div>
-<h3>Binary paketler</h3><p>Gentoo her şeyi üç saat derlemek demek değil. Devasa paketler için binary paket kullanmak ciddi zaman kazandırır.</p>
+<h2>Get to know Portage</h2>
+<p><code>emerge</code> is the tool you'll use most from Portage. It compiles packages from source; you can also use binary packages if you want.</p>
+<div class="two"><div class="card"><b>Install</b><br/><code>emerge --ask package</code></div><div class="card"><b>Search</b><br/><code>emerge --search package</code></div><div class="card"><b>Update</b><br/><code>emerge --ask --update --deep --newuse @world</code></div><div class="card"><b>Preview first</b><br/><code>emerge --ask --pretend package</code></div></div>
+<div class="callout info"><b>Good habit:</b> Before any big change, use <code>--pretend</code> to see what will be installed/removed. Portage shows you the plan, and you check whether it makes sense.</div>
+<h3>Binary packages</h3><p>Gentoo doesn't mean compiling everything for three hours. Using binary packages for huge packages saves serious time.</p>
 </div>
 </section>
 <section class="window active section-window" id="profile">
-<div class="title-bar"><div class="title-bar-text">Profile ve USE flag işi</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Profile and USE flags</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Profile ve USE flag işi</h2>
-<p><b>Profile</b> sistemin genel varsayılanlarını belirler. <b>USE flag</b> ise özellik seçimidir; örneğin bir pakete Wayland ya da Bluetooth desteği eklemek gibi.</p>
+<h2>Profile and USE flags</h2>
+<p>A <b>profile</b> defines the system's overall defaults. A <b>USE flag</b> is a feature choice — for example adding Wayland or Bluetooth support to a package.</p>
 <div class="cmd"><pre>eselect profile list
 emerge --info | grep '^USE'</pre></div>
-<p>Doğru profile'ı seçiminize göre <code>eselect profile set &lt;NUMARA&gt;</code> ile kurun:</p>
+<p>Set the right profile based on your choice with <code>eselect profile set &lt;NUMBER&gt;</code>:</p>
 
 <div class="opt libc glibc desktop de desktop kde init openrc"><div class="cmd"><div class="bar">KDE + OpenRC</div><pre>eselect profile set default/linux/amd64/23.0/desktop/plasma</pre></div></div>
 <div class="opt libc glibc desktop de desktop kde init systemd"><div class="cmd"><div class="bar">KDE + systemd</div><pre>eselect profile set default/linux/amd64/23.0/desktop/plasma/systemd</pre></div></div>
 <div class="opt libc glibc desktop de desktop gnome init openrc"><div class="cmd"><div class="bar">GNOME + OpenRC</div><pre>eselect profile set default/linux/amd64/23.0/desktop/gnome</pre></div></div>
 <div class="opt libc glibc desktop de desktop gnome init systemd"><div class="cmd"><div class="bar">GNOME + systemd</div><pre>eselect profile set default/linux/amd64/23.0/desktop/gnome/systemd</pre></div></div>
-<div class="opt libc glibc desktop de desktop xfce init openrc"><div class="cmd"><div class="bar">XFCE + OpenRC (özel XFCE profili yok, genel desktop profili)</div><pre>eselect profile set default/linux/amd64/23.0/desktop</pre></div></div>
-<div class="opt libc glibc desktop de desktop xfce init systemd"><div class="cmd"><div class="bar">XFCE + systemd (özel XFCE profili yok, genel desktop profili)</div><pre>eselect profile set default/linux/amd64/23.0/desktop/systemd</pre></div></div>
-<div class="opt libc glibc desktop de desktop lxqt init openrc"><div class="cmd"><div class="bar">LXQt + OpenRC (özel LXQt profili yok, genel desktop profili)</div><pre>eselect profile set default/linux/amd64/23.0/desktop</pre></div></div>
-<div class="opt libc glibc desktop de desktop lxqt init systemd"><div class="cmd"><div class="bar">LXQt + systemd (özel LXQt profili yok, genel desktop profili)</div><pre>eselect profile set default/linux/amd64/23.0/desktop/systemd</pre></div></div>
+<div class="opt libc glibc desktop de desktop xfce init openrc"><div class="cmd"><div class="bar">XFCE + OpenRC (no dedicated XFCE profile, general desktop profile)</div><pre>eselect profile set default/linux/amd64/23.0/desktop</pre></div></div>
+<div class="opt libc glibc desktop de desktop xfce init systemd"><div class="cmd"><div class="bar">XFCE + systemd (no dedicated XFCE profile, general desktop profile)</div><pre>eselect profile set default/linux/amd64/23.0/desktop/systemd</pre></div></div>
+<div class="opt libc glibc desktop de desktop lxqt init openrc"><div class="cmd"><div class="bar">LXQt + OpenRC (no dedicated LXQt profile, general desktop profile)</div><pre>eselect profile set default/linux/amd64/23.0/desktop</pre></div></div>
+<div class="opt libc glibc desktop de desktop lxqt init systemd"><div class="cmd"><div class="bar">LXQt + systemd (no dedicated LXQt profile, general desktop profile)</div><pre>eselect profile set default/linux/amd64/23.0/desktop/systemd</pre></div></div>
 <div class="opt libc glibc desktop server init openrc"><div class="cmd"><div class="bar">Server + OpenRC</div><pre>eselect profile set default/linux/amd64/23.0</pre></div></div>
 <div class="opt libc glibc desktop server init systemd"><div class="cmd"><div class="bar">Server + systemd</div><pre>eselect profile set default/linux/amd64/23.0/systemd</pre></div></div>
-<div class="opt libc musl"><div class="callout warn"><b>musl profili yok:</b> musl'da <code>desktop/plasma</code> gibi masaüstü profilleri bulunmaz (deneysel). <code>eselect profile list</code> ile musl'lu base profilini seç. Masaüstü ortamı yine kurulabilir — yalnızca USE/bağımlılıkları elle belirlemen gerekir (örn. <code>USE="X wayland qt6 gtk3 pipewire"</code>). Bu nedenle masaüstü + musl kombinasyonu profesyoneller içindir.</div></div>
+<div class="opt libc musl"><div class="callout warn"><b>No musl profile:</b> musl has no desktop profiles like <code>desktop/plasma</code> (experimental). Use <code>eselect profile list</code> to pick a musl base profile. A desktop environment can still be installed — you just have to set up the USE flags/dependencies yourself (e.g. <code>USE="X wayland qt6 gtk3 pipewire"</code>). That's why the desktop + musl combo is for advanced users.</div></div>
 
-<div class="opt libc glibc init systemd"><p>systemd için bir de <code>systemd</code> global USE flag'ini aç ve <code>elogind</code>'i kapat (çakışmayı önler):</p>
+<div class="opt libc glibc init systemd"><p>For systemd, also turn on the global <code>systemd</code> USE flag and turn off <code>elogind</code> (to avoid a conflict):</p>
 <div class="cmd"><pre>echo 'USE="${USE} systemd -elogind"' &gt;&gt; /etc/portage/make.conf</pre></div></div>
-<p>Global USE ayarları <code>/etc/portage/make.conf</code>'a, paket özelindekiler <code>/etc/portage/package.use/</code> klasörüne yazılır.</p>
+<p>Global USE settings go in <code>/etc/portage/make.conf</code>, package-specific ones go in the <code>/etc/portage/package.use/</code> folder.</p>
 <div class="cmd"><pre>mkdir -p /etc/portage/package.use
 nano /etc/portage/make.conf</pre></div>
-<div class="callout warn"><b>Yeni başlayan tuzağı:</b> "Her şeyi açayım" deme. Çok USE flag, bağımlılık sayısını artırır. Varsayılanla başla, ihtiyaç oldukça ekle.</div>
+<div class="callout warn"><b>Beginner trap:</b> Don't say "turn everything on". Too many USE flags increase the number of dependencies. Start with the defaults and add as needed.</div>
 </div>
 </section>
 <section class="window active section-window" id="kernel">
-<div class="title-bar"><div class="title-bar-text">Kernel: ilk seferde elleme</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Kernel: don't touch it the first time</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Kernel: ilk seferde elleme</h2>
-<p>Kernel'i elle yapılandırmak Gentoo'nun özgürlüklerinden biri, ama ilk kurulumda buna gerek yok. Derleme derdi olmasın dersen <b>distribution kernel</b> kullan; Handbook'un da önerdiği <code>sys-kernel/gentoo-kernel-bin</code> hazır bir kernel sağlar.</p>
-<p>Distribution kernel için bir de <b>initramfs</b> şart; yoksa GRUB kök dosya sistemini bulamaz. Bunun için <code>sys-kernel/installkernel</code>'ü dracut ile yapılandır ve <code>dist-kernel</code> USE flag'ini aç:</p>
+<h2>Kernel: don't touch it the first time</h2>
+<p>Configuring the kernel manually is one of Gentoo's freedoms, but you don't need it for the first install. If you don't want the compiling hassle, use the <b>distribution kernel</b>; <code>sys-kernel/gentoo-kernel-bin</code>, which the Handbook also recommends, provides a ready-made kernel.</p>
+<p>For a distribution kernel you also need an <b>initramfs</b>; otherwise GRUB can't find the root filesystem. For this, configure <code>sys-kernel/installkernel</code> with dracut and turn on the <code>dist-kernel</code> USE flag:</p>
 <div class="cmd"><pre>echo 'sys-kernel/installkernel dracut' &gt; /etc/portage/package.use/installkernel
 echo 'USE="${USE} dist-kernel dracut"' &gt;&gt; /etc/portage/make.conf
 emerge --ask sys-kernel/installkernel
 emerge --ask sys-kernel/gentoo-kernel-bin</pre></div>
-<p>Önce sistemi ayağa kaldır. Sonra merak ediyorsan istediğin zaman kendi kernel config'ine girebilirsin; ilk günden elle yapmak şart değil.</p>
+<p>First get the system up and running. Later, if you're curious, you can go into your own kernel config any time; doing it by hand on day one isn't necessary.</p>
 </div>
 </section>
 <section class="window active section-window" id="system">
-<div class="title-bar"><div class="title-bar-text">Sistemi kendimize göre ayarlayalım</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Set the system up for ourselves</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Sistemi kendimize göre ayarlayalım</h2>
-<h3>Bilgisayarın adı</h3><div class="cmd"><pre>echo gentoo-lab &gt; /etc/hostname</pre></div>
-<h3>Saat dilimi</h3><div class="cmd"><pre>ln -sf /usr/share/zoneinfo/Europe/&lt;BÖLGE&gt;/&lt;ŞEHİR&gt; /etc/localtime
-echo Europe/&lt;BÖLGE&gt;/&lt;ŞEHİR&gt; &gt; /etc/timezone</pre></div>
-<h3>Yerel ayarlar</h3><p>Kullanılacak dili ve yerel ayarları seç. Klavye düzeni de ayrı bir ayardır; unutma.</p>
-<div class="opt libc glibc"><div class="cmd"><div class="bar">glibc'de yerel ayarlar</div><pre>nano -w /etc/locale.gen
+<h2>Set the system up for ourselves</h2>
+<h3>Computer's hostname</h3><div class="cmd"><pre>echo gentoo-lab &gt; /etc/hostname</pre></div>
+<h3>Time zone</h3><div class="cmd"><pre>ln -sf /usr/share/zoneinfo/Europe/&lt;REGION&gt;/&lt;CITY&gt; /etc/localtime
+echo Europe/&lt;REGION&gt;/&lt;CITY&gt; &gt; /etc/timezone</pre></div>
+<h3>Locale</h3><p>Choose the language and locale settings to use. Keyboard layout is a separate setting; don't forget it.</p>
+<div class="opt libc glibc"><div class="cmd"><div class="bar">Locale on glibc</div><pre>nano -w /etc/locale.gen
 locale-gen
-eselect locale set &lt;NUMARA&gt;</pre></div></div>
-<div class="opt libc musl"><div class="callout info"><b>musl'da yerel ayarlar:</b> musl, glibc'nin <code>locale-gen</code> komutunu içermez. İstersen uyumluluk için <code>sys-apps/musl-locales</code> kur; <code>MUSL_LOCPATH</code> ortam değişkenini <code>/usr/share/i18n/locales/musl</code> yap, sonra <code>eselect locale list</code> ile seç.</div></div>
-<h3>Root parolası</h3><div class="cmd"><pre>passwd</pre></div>
-<h3>Servisleri açılışta çalıştır</h3><div class="opt init openrc"><p>OpenRC'de servisleri bir runlevel'a ekleyerek açarsın. NetworkManager'ı henüz kurmadıysan kur, sonra default runlevel'a ekle:</p>
+eselect locale set &lt;NUMBER&gt;</pre></div></div>
+<div class="opt libc musl"><div class="callout info"><b>Locale on musl:</b> musl doesn't include glibc's <code>locale-gen</code> command. If you want, install <code>sys-apps/musl-locales</code> for compatibility; set the <code>MUSL_LOCPATH</code> environment variable to <code>/usr/share/i18n/locales/musl</code>, then select with <code>eselect locale list</code>.</div></div>
+<h3>Root password</h3><div class="cmd"><pre>passwd</pre></div>
+<h3>Start services at boot</h3><div class="opt init openrc"><p>In OpenRC you enable services by adding them to a runlevel. If you haven't installed NetworkManager yet, install it, then add it to the default runlevel:</p>
 <div class="cmd"><pre>emerge --ask net-misc/networkmanager
 rc-update add NetworkManager default</pre></div></div>
-<div class="opt init systemd"><p>systemd'de servisleri <code>systemctl</code> ile açar ve açılışta çalışmasını sağlarsın. NetworkManager'ı henüz kurmadıysan kur, sonra şöyle başlat:</p>
+<div class="opt init systemd"><p>In systemd you enable services with <code>systemctl</code> and make them start at boot. If you haven't installed NetworkManager yet, install it, then start it like this:</p>
 <div class="cmd"><pre>emerge --ask net-misc/networkmanager
 systemctl enable --now NetworkManager</pre></div></div>
-<div class="opt init openrc"><p>OpenRC'nin merkezi ayar dosyası <code>/etc/rc.conf</code>'tur. Klavye için <code>/etc/conf.d/keymaps</code>, saat için <code>/etc/conf.d/hwclock</code> önemlidir.</p></div>
-<div class="opt init systemd"><p>systemd'de servisler <code>.service</code> birimleriyle yönetilir; servisleri <code>systemctl enable --now servis</code> ile kalıcı olarak başlatırsın.</p></div>
+<div class="opt init openrc"><p>OpenRC's central settings file is <code>/etc/rc.conf</code>. For the keyboard, <code>/etc/conf.d/keymaps</code> matters; for the clock, <code>/etc/conf.d/hwclock</code>.</p></div>
+<div class="opt init systemd"><p>In systemd, services are managed with <code>.service</code> units; you start services permanently with <code>systemctl enable --now service</code>.</p></div>
 </div>
 </section>
 <section class="window active section-window" id="boot">
-<div class="title-bar"><div class="title-bar-text">GRUB: bilgisayar Gentoo’yu nasıl açacak?</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">GRUB: how will the computer open Gentoo?</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>GRUB: bilgisayar Gentoo’yu nasıl açacak?</h2>
+<h2>GRUB: how will the computer open Gentoo?</h2>
 <div class="opt firmware gpt">
-<p>GRUB'u kurmak yetmez; EFI bölümünün doğru yerde bağlı (mount) olduğundan emin olmalısın. UEFI için Handbook <code>efi-64</code> platformunu kullanır.</p>
-<p>Önce GRUB paketini kur (<code>GRUB_PLATFORMS="efi-64"</code>'ün <code>make.conf</code>'ta tanımlı olduğundan emin ol):</p>
+<p>Installing GRUB isn't enough; you must make sure the EFI partition is mounted in the right place. For UEFI the Handbook uses the <code>efi-64</code> platform.</p>
+<p>First install the GRUB package (make sure <code>GRUB_PLATFORMS="efi-64"</code> is defined in <code>make.conf</code>):</p>
 <div class="cmd"><pre>echo 'GRUB_PLATFORMS="efi-64"' &gt;&gt; /etc/portage/make.conf
 emerge --ask sys-boot/grub</pre></div>
-<p>Sonra kurulumu yap ve menüyü üret:</p>
+<p>Then do the install and generate the menu:</p>
 <div class="cmd"><pre>grub-install --target=x86_64-efi --efi-directory=/efi
 GRUB_GFXMODE=auto grub-mkconfig -o /boot/grub/grub.cfg</pre></div>
-<p>EFI dosyaları, kurulum yaptığın hedef diskin ESP'sine yazılır. Doğru bölümün bağlı olduğundan emin ol.</p>
-<div class="callout warn"><b>Bir daha:</b> <code>grub-install</code>'dan önce <code>mount | grep /efi</code> ve <code>lsblk</code> ile doğru ESP'nin bağlı olduğunu doğrula.</div>
+<p>The EFI files are written to the ESP of the target disk you installed to. Make sure the correct partition is mounted.</p>
+<div class="callout warn"><b>Once more:</b> Before <code>grub-install</code>, verify the correct ESP is mounted with <code>mount | grep /efi</code> and <code>lsblk</code>.</div>
 </div>
 <div class="opt firmware mbr">
-<p>MBR + BIOS'ta EFI bölümü yoktur; GRUB kendini doğrudan diskin önyükleme alanına (MBR) yazar. <code>GRUB_PLATFORMS="pc"</code> gerekir.</p>
+<p>On MBR + BIOS there is no EFI partition; GRUB writes itself directly to the disk's boot area (the MBR). <code>GRUB_PLATFORMS="pc"</code> is required.</p>
 <div class="cmd"><pre>echo 'GRUB_PLATFORMS="pc"' &gt;&gt; /etc/portage/make.conf
 emerge --ask sys-boot/grub</pre></div>
-<p>Sonra kurulumu yap ve menüyü üret. <b>&lt;HEDEF_DISK&gt;</b> yerine bölüm değil <b>tüm disk</b> adı gelir (ör. <code>/dev/sda</code>):</p>
-<div class="cmd"><pre>grub-install /dev/&lt;HEDEF_DISK&gt;
+<p>Then do the install and generate the menu. For <b>&lt;TARGET_DISK&gt;</b> use the <b>whole disk</b> name, not a partition (e.g. <code>/dev/sda</code>):</p>
+<div class="cmd"><pre>grub-install /dev/&lt;TARGET_DISK&gt;
 GRUB_GFXMODE=auto grub-mkconfig -o /boot/grub/grub.cfg</pre></div>
-<div class="callout warn"><b>Bir daha:</b> MBR'de <code>grub-install</code> hedefi <b>disk</b> olmalı (<code>/dev/sda</code> gibi), bölüm değil (<code>/dev/sda1</code> değil).</div>
+<div class="callout warn"><b>Once more:</b> On MBR, the <code>grub-install</code> target must be the <b>disk</b> (like <code>/dev/sda</code>), not a partition (not <code>/dev/sda1</code>).</div>
 </div>
 </div>
 </section>
 <section class="window active section-window" id="desktop">
-<div class="title-bar"><div class="title-bar-text">Masaüstünü kuralım</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Let's set up the desktop</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Masaüstünü kuralım</h2>
+<h2>Let's set up the desktop</h2>
 <div class="opt desktop server">
-<p>Server kurulumunda grafik masaüstü ve display manager kurmuyoruz. Sadece internet ve temel servisler yeterlidir. Ağ NetworkManager ile kurulduysa gelecekte istediğin zaman masaüstü ekleyebilirsin.</p>
-<div class="callout info"><b>Server'dan sonra masaüstü istersen:</b> Önce bu bölümdeki masaüstü ortamı paketlerini kur, ardından bir display manager ekle. Seçimini yapıp buraya dönebilirsin.</div>
+<p>For a server install we don't set up a graphical desktop or display manager. Internet and basic services are enough. If the network was set up with NetworkManager, you can add a desktop whenever you want in the future.</p>
+<div class="callout info"><b>If you want a desktop after a server:</b> First install the desktop environment packages in this section, then add a display manager. Make your choice and come back here.</div>
 </div>
 
 <div class="opt desktop de desktop kde">
-<p>KDE Plasma kuruyoruz. Wayland, Plasma 6'nın varsayılan oturumudur.</p>
+<p>We install KDE Plasma. Wayland is the default session of Plasma 6.</p>
 <div class="cmd"><pre>emerge --ask kde-plasma/plasma-meta</pre></div>
-<p>Giriş ekranı için SDDM, KDE uygulamalarının Wayland ile konuşması için portal paketi kuruyoruz:</p>
+<p>We install SDDM for the login screen and a portal package so KDE apps can talk to Wayland:</p>
 <div class="cmd"><pre>emerge --ask kde-plasma/xdg-desktop-portal-kde
 emerge --ask sddm</pre></div>
 </div>
 <div class="opt desktop de desktop gnome">
-<p>GNOME kuruyoruz.</p>
+<p>We install GNOME.</p>
 <div class="cmd"><pre>emerge --ask gnome-base/gnome</pre></div>
-<p>Hafif bir kurulum istersen <code>gnome-base/gnome-light</code> kullanabilirsin. Giriş ekranı için GDM kuruyoruz:</p>
+<p>If you want a lighter install you can use <code>gnome-base/gnome-light</code>. We install GDM for the login screen:</p>
 <div class="cmd"><pre>emerge --ask gnome-base/gdm</pre></div>
-<div class="opt init openrc"><div class="callout info"><b>OpenRC + NVIDIA + GDM notu:</b> NVIDIA sürücüsü ve OpenRC kullanırken GDM'nin Wayland oturumunu başlatması sorunlu olabilir. Alternatif olarak SDDM (<code>x11-misc/sddm</code>) kullanabilirsin.</div></div>
+<div class="opt init openrc"><div class="callout info"><b>OpenRC + NVIDIA + GDM note:</b> With the NVIDIA driver and OpenRC, GDM starting a Wayland session can be problematic. As an alternative you can use SDDM (<code>x11-misc/sddm</code>).</div></div>
 </div>
 <div class="opt desktop de desktop xfce">
-<p>XFCE kuruyoruz.</p>
+<p>We install XFCE.</p>
 <div class="cmd"><pre>emerge --ask xfce-base/xfce4-meta</pre></div>
-<p>Giriş ekranı için LightDM ya da SDDM tercih edebilirsin:</p>
+<p>For the login screen you can prefer LightDM or SDDM:</p>
 <div class="cmd"><pre>emerge --ask x11-misc/lightdm
 emerge --ask x11-misc/lightdm-gtk-greeter</pre></div>
 </div>
 <div class="opt desktop de desktop lxqt">
-<p>LXQt kuruyoruz (hafif, Qt tabanlı).</p>
+<p>We install LXQt (light, Qt-based).</p>
 <div class="cmd"><pre>emerge --ask lxqt-base/lxqt-meta</pre></div>
-<p>Display manager seçeneği varsayılan olarak LXQt'la birlikte SDDM'yi getirir; istersen sddm USE flag'ini kapatıp başka bir DM seçebilirsin.</p>
+<p>By default the display-manager option brings SDDM with LXQt; if you want, you can turn off the sddm USE flag and pick another DM.</p>
 </div>
 
 <div class="opt desktop de">
-<p>Display manager'ı açılışta çalıştır. OpenRC'de önce <code>gui-libs/display-manager-init</code> gerekir ve <code>/etc/conf.d/display-manager</code> içinde <code>DISPLAYMANAGER="sddm"</code> (KDE/LXQt), <code>"gdm"</code> (GNOME) veya <code>"lightdm"</code> (XFCE) yazılır.</p>
+<p>Run the display manager at boot. With OpenRC you first need <code>gui-libs/display-manager-init</code> and set <code>DISPLAYMANAGER="sddm"</code> (KDE/LXQt), <code>"gdm"</code> (GNOME) or <code>"lightdm"</code> (XFCE) in <code>/etc/conf.d/display-manager</code>.</p>
 <div class="opt init openrc"><div class="cmd"><div class="bar">Display manager · OpenRC</div><pre>emerge --ask gui-libs/display-manager-init
 nano -w /etc/conf.d/display-manager
 rc-update add display-manager default</pre></div></div>
 <div class="opt init systemd"><div class="cmd"><div class="bar">Display manager · systemd</div><pre>systemctl enable --now sddm.service
-# GNOME için: systemctl enable --now gdm.service
-# XFCE için:  systemctl enable --now lightdm.service</pre></div></div>
+# For GNOME: systemctl enable --now gdm.service
+# For XFCE:  systemctl enable --now lightdm.service</pre></div></div>
 </div>
 
 <div class="opt desktop de">
-<p>Ses için PipeWire + WirePlumber, Bluetooth istiyorsan BlueZ ekleyebilirsin:</p>
+<p>For audio use PipeWire + WirePlumber, and if you want Bluetooth you can add BlueZ:</p>
 <div class="cmd"><pre>emerge --ask media-video/pipewire media-video/wireplumber
 emerge --ask net-wireless/bluez</pre></div>
-<div class="callout info"><b>Not:</b> Paket adları ve profile/USE gereksinimleri zamanla değişebilir. Paket adında hata alırsan <code>emerge --search</code> kullan. Gentoo öğrenmenin bir parçası da paket adını bulmak.</div>
+<div class="callout info"><b>Note:</b> Package names and profile/USE requirements can change over time. If you get an error on a package name, use <code>emerge --search</code>. Part of learning Gentoo is finding the package name.</div>
 </div>
 </div>
 </section>
 <section class="window active section-window" id="nvidia">
-<div class="title-bar"><div class="title-bar-text">Grafik sürücüsü</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Graphics driver</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Grafik sürücüsü</h2>
+<h2>Graphics driver</h2>
 <div class="opt gpu none">
-<div class="callout info"><b>Grafik sürücüsü kurulmuyor:</b> Server / headless kurulumda grafik sürücüsü gerekmez. <code>VIDEO_CARDS</code> ayarlamana gerek yok.</div>
+<div class="callout info"><b>No graphics driver is installed:</b> A server / headless install doesn't need a graphics driver. You don't need to set <code>VIDEO_CARDS</code>.</div>
 </div>
 
 <div class="opt gpu real gpu nvidia">
-<p>NVIDIA için paket <code>x11-drivers/nvidia-drivers</code>. Dağıtım kerneliyle çalışması için <code>dist-kernel</code> USE flag'i de gerekir.</p>
-<div class="cmd"><pre># "-*" önce varsayılan video sürücülerini sıfırlar, sonra nvidia'yı seçer.
+<p>For NVIDIA the package is <code>x11-drivers/nvidia-drivers</code>. To work with the distribution kernel, the <code>dist-kernel</code> USE flag is also needed.</p>
+<div class="cmd"><pre># "-*" first resets the default video drivers, then selects nvidia.
 echo 'VIDEO_CARDS="-* nvidia"' &gt;&gt; /etc/portage/make.conf
 mkdir -p /etc/portage/package.use
 printf '%s\n' '*/* nvidia vdpau nvenc wayland' &gt; /etc/portage/package.use/nvidia
 printf '%s\n' '*/* dist-kernel' &gt; /etc/portage/package.use/dist-kernel
 emerge --ask x11-drivers/nvidia-drivers</pre></div>
-<p><code>kernel-open</code> (açık kaynak katman) Turing ve sonrası (GTX 1650+) kartlarda kullanılabilir ve modern sürücülerde varsayılanla gelir; eski kartlarda kapatmak gerekebilir:</p>
+<p><code>kernel-open</code> (the open-source layer) can be used on Turing and later (GTX 1650+) cards and comes as the default in modern drivers; you may need to disable it on older cards:</p>
 <div class="cmd"><pre>printf '%s\n' 'x11-drivers/nvidia-drivers -kernel-open' &gt; /etc/portage/package.use/nvidia</pre></div>
-<p>Wayland oturumunda NVIDIA'nın düzgün çalışması için <code>nvidia-drm modeset=1</code> önerilir (kernel command line'da ya da <code>/etc/modules-load.d/nvidia-drm.conf</code> içinde):</p>
+<p>For NVIDIA to work properly on a Wayland session, <code>nvidia-drm modeset=1</code> is recommended (on the kernel command line or in <code>/etc/modules-load.d/nvidia-drm.conf</code>):</p>
 <div class="cmd"><pre>printf '%s\n' 'nvidia-drm' 'options nvidia-drm modeset=1' &gt; /etc/modules-load.d/nvidia-drm.conf</pre></div>
-<p>Kurulum sonrası sürücünün yüklendiğini kontrol et:</p>
+<p>After installation, check that the driver is loaded:</p>
 <div class="cmd"><pre>nvidia-smi
 lsmod | grep nvidia
 </pre></div>
 </div>
 
 <div class="opt gpu real gpu amd">
-<p>AMD için açık kaynak AMDGPU + RadeonSI sürücüleri kullanılır (<code>media-libs/mesa</code> üzerinden).</p>
+<p>For AMD, the open-source AMDGPU + RadeonSI drivers are used (via <code>media-libs/mesa</code>).</p>
 <div class="cmd"><pre>echo 'VIDEO_CARDS="-* amdgpu radeonsi"' &gt;&gt; /etc/portage/make.conf
 emerge --ask --changed-use --deep @world</pre></div>
-<p>Eski AMD kartlarında (GCN öncesi) <code>radeon</code>'u da eklemen gerekebilir:</p>
+<p>On older AMD cards (pre-GCN) you may also need to add <code>radeon</code>:</p>
 <div class="cmd"><pre>echo 'VIDEO_CARDS="-* amdgpu radeonsi radeon"' &gt;&gt; /etc/portage/make.conf
 emerge --ask --changed-use --deep @world</pre></div>
-<div class="callout info"><b>Firmware:</b> AMD kartları için Linux firmware paketi gerekir; distribution kernel kullanıyorsan <code>sys-kernel/gentoo-kernel-bin</code> yanında firmware otomatik gelir.</div>
+<div class="callout info"><b>Firmware:</b> AMD cards need the Linux firmware package; if you use a distribution kernel, the firmware comes automatically with <code>sys-kernel/gentoo-kernel-bin</code>.</div>
 </div>
 
 <div class="opt gpu real gpu intel">
-<p>Intel için açık kaynak sürücü kullanılır; <code>modesetting</code> varsayılan DDX sürücüsü xorg-server içinde gelir.</p>
+<p>For Intel the open-source driver is used; the <code>modesetting</code> default DDX driver comes with xorg-server.</p>
 <div class="cmd"><pre>echo 'VIDEO_CARDS="-* intel"' &gt;&gt; /etc/portage/make.conf
 emerge --ask --changed-use --deep @world</pre></div>
-<div class="callout info"><b>Firmware:</b> Intel grafik kartları için DMC/GuC/HuC firmware'i gerekir; distribution kernel ile birlikte <code>sys-kernel/gentoo-kernel-bin</code> gerekli firmware'ü içerir.</div>
+<div class="callout info"><b>Firmware:</b> Intel graphics cards need DMC/GuC/HuC firmware; with a distribution kernel, <code>sys-kernel/gentoo-kernel-bin</code> includes the needed firmware.</div>
 </div>
 
-<div class="opt gpu real"><div class="callout info"><b>Not:</b> Hibrit grafik sistemlerinde PRIME ve GPU seçimi ek kurulum gerektirir. Önce temel sürücünün düzgün yüklendiğini doğrula.</div></div>
+<div class="opt gpu real"><div class="callout info"><b>Note:</b> On hybrid graphics systems, PRIME and GPU selection need extra setup. First verify the base driver loads correctly.</div></div>
 </div>
 </section>
 <section class="window active section-window" id="firstboot">
-<div class="title-bar"><div class="title-bar-text">Tamam mı? Son kontrol</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Ready? Final check</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Tamam mı? Son kontrol</h2>
+<h2>Ready? Final check</h2>
 <div class="checklist">
-<label><input type="checkbox"/> Sistem Gentoo'ya giriyor mu? Ağ çalışıyor mu?</label>
-<label><input type="checkbox"/> <code>uname -r</code> çalışıyor.</label>
-<label><input type="checkbox"/> <code>ip a</code> ağ kartını gösteriyor.</label>
-<label><input type="checkbox"/> <code>ping gentoo.org</code> çalışıyor.</label>
-<label><input type="checkbox"/> <code>emerge --info</code> çalışıyor.</label>
-<label class="opt desktop de"><input type="checkbox"/> Masaüstü açılıyor (display manager geliyor).</label>
+<label><input type="checkbox"/> Does the system boot into Gentoo? Is the network working?</label>
+<label><input type="checkbox"/> <code>uname -r</code> runs.</label>
+<label><input type="checkbox"/> <code>ip a</code> shows the network card.</label>
+<label><input type="checkbox"/> <code>ping gentoo.org</code> works.</label>
+<label><input type="checkbox"/> <code>emerge --info</code> works.</label>
+<label class="opt desktop de"><input type="checkbox"/> The desktop starts (display manager appears).</label>
 <label class="opt desktop de desktop kde"><input type="checkbox"/> <code>echo $XDG_SESSION_TYPE</code> → <code>wayland</code> (KDE).</label>
-<label class="opt gpu real gpu nvidia"><input type="checkbox"/> NVIDIA kullanıyorsam <code>nvidia-smi</code> çalışıyor.</label>
-<label class="opt gpu real"><input type="checkbox"/> Ekran çözünürlüğü ve 3D doğru çalışıyor (yazılım render'a düşmemiş).</label>
-<label class="opt desktop de"><input type="checkbox"/> Ses çıkışı PipeWire/WirePlumber ile çalışıyor.</label>
-<label class="opt libc glibc"><input type="checkbox"/> Yerel ayarlar (locale) doğru seçili.</label>
+<label class="opt gpu real gpu nvidia"><input type="checkbox"/> If using NVIDIA, <code>nvidia-smi</code> works.</label>
+<label class="opt gpu real"><input type="checkbox"/> The screen resolution and 3D work correctly (not fallen back to software rendering).</label>
+<label class="opt desktop de"><input type="checkbox"/> Audio output works with PipeWire/WirePlumber.</label>
+<label class="opt libc glibc"><input type="checkbox"/> The locale is selected correctly.</label>
 </div>
 </div>
 </section>
 <section class="window active section-window" id="sources">
-<div class="title-bar"><div class="title-bar-text">Kaynaklar · Takılırsan buraya bak</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Sources · Look here if stuck</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Kaynaklar · Takılırsan buraya bak</h2>
+<h2>Sources · Look here if stuck</h2>
 <ul>
-<li><a href="https://wiki.gentoo.org/wiki/Handbook:AMD64/tr" target="_blank">Gentoo AMD64 Handbook (Türkçe)</a> · kurulum ve OpenRC akışı.</li>
-<li><a href="https://wiki.gentoo.org/wiki/Handbook:AMD64" target="_blank">Handbook (genel bakış)</a> · kurulum yaklaşımı ve sistem seçenekleri.</li>
-<li><a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/" target="_blank">Gentoo AMD64 distfiles</a> · güncel Live/Stage 3 dizinleri.</li>
-<li><a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-desktop-openrc/" target="_blank">Desktop OpenRC Stage 3</a> · güncel masaüstü OpenRC stage'leri.</li>
-<li><a href="https://wiki.gentoo.org/wiki/Handbook%3AAMD64/Installation/Disks/tr" target="_blank">Disk hazırlama</a> · UEFI/GPT ve örnek bölüm yapısı.</li>
-<li><a href="https://wiki.gentoo.org/wiki/Handbook%3AAMD64/Installation/Kernel/en" target="_blank">Kernel bölümü</a> · gentoo-kernel ve gentoo-kernel-bin.</li>
-<li><a href="https://wiki.gentoo.org/wiki/Handbook%3AParts/Networking/Wireless/en" target="_blank">Kablosuz ağ (Wi-Fi)</a> · iw, iwd, wpa_supplicant ve NetworkManager seçenekleri.</li>
-<li><a href="https://wiki.gentoo.org/wiki/Networkmanager" target="_blank">NetworkManager</a> · Wi-Fi bağlantısı, nmtui ve kernel/firmware notları.</li>
-<li><a href="https://wiki.gentoo.org/wiki/Handbook%3AParts/Working/USE" target="_blank">USE flags</a> · global ve paket özelinde USE kullanımı.</li>
-<li><a href="https://wiki.gentoo.org/wiki/Handbook%3AAMD64/Installation/Bootloader" target="_blank">Bootloader</a> · GRUB/UEFI yaklaşımı.</li>
-<li><a href="https://wiki.gentoo.org/wiki/Systemd" target="_blank">systemd</a> · systemd kurulumu, profile ve servis yönetimi.</li>
-<li><a href="https://wiki.gentoo.org/wiki/Musl" target="_blank">musl</a> · musl libc kullanım kılavuzu ve locale.</li>
-<li><a href="https://wiki.gentoo.org/wiki/KDE" target="_blank">KDE</a> · Plasma 6 kurulumu ve profile seçimi.</li>
-<li><a href="https://wiki.gentoo.org/wiki/GNOME/Guide" target="_blank">GNOME/Guide</a> · GNOME kurulumu ve OpenRC/systemd profilleri.</li>
-<li><a href="https://wiki.gentoo.org/wiki/GRUB" target="_blank">GRUB</a> · UEFI/GPT ve BIOS/MBR kurulumu.</li>
-<li><a href="https://wiki.gentoo.org/wiki/NVIDIA/nvidia-drivers" target="_blank">nvidia-drivers</a> · NVIDIA sürücüsü ve USE/kernel notları.</li>
-<li><a href="https://wiki.gentoo.org/wiki/AMDGPU" target="_blank">AMDGPU</a> · AMD grafik sürücüsü.</li>
-<li><a href="https://wiki.gentoo.org/wiki/Intel" target="_blank">Intel</a> · Intel grafik sürücüsü ve firmware.</li>
+<li><a href="https://wiki.gentoo.org/wiki/Handbook:AMD64" target="_blank">Gentoo AMD64 Handbook</a> · the full install guide and the authoritative reference this guide draws from.</li>
+<li><a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/" target="_blank">Gentoo AMD64 distfiles</a> · the current Live/Stage 3 directories.</li>
+<li><a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-desktop-openrc/" target="_blank">Desktop OpenRC Stage 3</a> · current desktop OpenRC stages.</li>
+<li><a href="https://wiki.gentoo.org/wiki/Handbook%3AAMD64/Installation/Disks/en" target="_blank">Disk preparation</a> · UEFI/GPT and an example partition layout.</li>
+<li><a href="https://wiki.gentoo.org/wiki/Handbook%3AAMD64/Installation/Kernel/en" target="_blank">Kernel section</a> · gentoo-kernel and gentoo-kernel-bin.</li>
+<li><a href="https://wiki.gentoo.org/wiki/Handbook%3AParts/Networking/Wireless/en" target="_blank">Wireless networking (Wi-Fi)</a> · the iw, iwd, wpa_supplicant and NetworkManager options.</li>
+<li><a href="https://wiki.gentoo.org/wiki/Networkmanager" target="_blank">NetworkManager</a> · Wi-Fi setup, nmtui and kernel/firmware notes.</li>
+<li><a href="https://wiki.gentoo.org/wiki/Handbook%3AParts/Working/USE" target="_blank">USE flags</a> · using global and package-specific USE.</li>
+<li><a href="https://wiki.gentoo.org/wiki/Handbook%3AAMD64/Installation/Bootloader" target="_blank">Bootloader</a> · the GRUB/UEFI approach.</li>
+<li><a href="https://wiki.gentoo.org/wiki/Systemd" target="_blank">systemd</a> · systemd install, profiles and service management.</li>
+<li><a href="https://wiki.gentoo.org/wiki/Musl" target="_blank">musl</a> · musl libc usage guide and locale.</li>
+<li><a href="https://wiki.gentoo.org/wiki/KDE" target="_blank">KDE</a> · Plasma 6 installation and profile selection.</li>
+<li><a href="https://wiki.gentoo.org/wiki/GNOME/Guide" target="_blank">GNOME/Guide</a> · GNOME installation and OpenRC/systemd profiles.</li>
+<li><a href="https://wiki.gentoo.org/wiki/GRUB" target="_blank">GRUB</a> · UEFI/GPT and BIOS/MBR installation.</li>
+<li><a href="https://wiki.gentoo.org/wiki/NVIDIA/nvidia-drivers" target="_blank">nvidia-drivers</a> · the NVIDIA driver and its USE/kernel notes.</li>
+<li><a href="https://wiki.gentoo.org/wiki/AMDGPU" target="_blank">AMDGPU</a> · the AMD graphics driver.</li>
+<li><a href="https://wiki.gentoo.org/wiki/Intel" target="_blank">Intel</a> · the Intel graphics driver and firmware.</li>
 </ul>
 </div>
 </section>
