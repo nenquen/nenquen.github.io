@@ -178,7 +178,7 @@ body[data-libc="musl"] .pickerbox .picker-row input[name="gpu"]{pointer-events:n
 <div class="grid">
 <aside class="side window active"><div class="title-bar"><div class="title-bar-text">Gentoo Notebook</div><div class="title-bar-controls"><button aria-label="Help"></button></div></div><div class="window-body has-space">
 <strong>Gentoo Notebook</strong>
-<a href="#zihin">Understand the idea first</a>
+<a href="#zihin">Learn it</a>
 <a href="#media">Live environment</a>
 <a href="#disk">Disk &amp; partitioning</a>
 <a href="#network">Network</a>
@@ -191,14 +191,14 @@ body[data-libc="musl"] .pickerbox .picker-row input[name="gpu"]{pointer-events:n
 <a href="#boot"><span class="navdef nv-fw-gpt">GPT / UEFI</span><span class="navdef nv-fw-mbr">MBR / BIOS</span></a>
 <a class="navlink-desktop" href="#desktop"><span class="navdef nv-ds-kde">KDE / Wayland</span><span class="navdef nv-ds-gnome">GNOME</span><span class="navdef nv-ds-xfce">XFCE</span><span class="navdef nv-ds-lxqt">LXQt</span><span class="navdef nv-ds-server">Server</span></a>
 <a class="navsec-gpu" href="#nvidia"><span class="navdef nv-gpu-nvidia">NVIDIA</span><span class="navdef nv-gpu-amd">AMD</span><span class="navdef nv-gpu-intel">Intel</span><span class="navdef nv-gpu-none">None</span></a>
-<a href="#firstboot">Ready? Final check</a>
+<a href="#firstboot">Check it all</a>
 <a href="#sources">Sources</a>
 </div></aside>
 <main>
 <section class="window active section-window" id="zihin">
-<div class="title-bar"><div class="title-bar-text">Understand the idea first</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Learn it</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Understand the idea first</h2>
+<h2>Learn it</h2>
 <p>Gentoo won't hand you a ready-made desktop and say "take it". You choose the parts of the system yourself. For now it's enough to know these concepts:</p>
 <div class="two">
 <div class="card"><b>Stage 3</b><br/>The ready-made base system we start from. We don't compile everything from scratch.</div>
@@ -214,9 +214,9 @@ body[data-libc="musl"] .pickerbox .picker-row input[name="gpu"]{pointer-events:n
 </section>
 
 <section class="window active section-window" id="media">
-<div class="title-bar"><div class="title-bar-text">Open the live environment</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Boot the live USB</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Open the live environment</h2>
+<h2>Boot the live USB</h2>
 <p>To start installing you need a working environment. Two options:</p>
 <div class="two">
 <div class="card"><b>Minimal ISO</b><br/>A plain, terminal-focused install environment.<br/><a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/current-install-amd64-minimal/" rel="noopener" target="_blank">Download current Minimal ISO</a></div>
@@ -237,9 +237,9 @@ body[data-libc="musl"] .pickerbox .picker-row input[name="gpu"]{pointer-events:n
 </div>
 </section>
 <section class="window active section-window" id="disk">
-<div class="title-bar"><div class="title-bar-text">Now let's prepare the disk</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Partition the disk</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Now let's prepare the disk</h2>
+<h2>Partition the disk</h2>
 <p>The only tricky thing here: <b>figuring out which disk you're working with.</b> In Linux, disk names vary from system to system, so I don't hard-code a disk name in this guide. Start by listing them:</p>
 <div class="cmd"><div class="bar">See the disks</div><pre>lsblk -o NAME,SIZE,MODEL,TYPE,FSTYPE,MOUNTPOINTS</pre></div>
 <p>In the output, find the target disk by its <b>model and capacity</b>, then open the partitioning tool with that disk's name:</p>
@@ -275,9 +275,9 @@ mount &lt;ROOT_PART&gt; /mnt/gentoo</pre></div>
 </div>
 </section>
 <section class="window active section-window" id="network">
-<div class="title-bar"><div class="title-bar-text">Let's sort out the network</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Get online</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Let's sort out the network</h2>
+<h2>Get online</h2>
 <p>Since the installation downloads files from the internet, network is required. First check whether you have a connection:</p>
 <div class="cmd"><div class="bar">Is there a connection?</div><pre>ping -c 3 gentoo.org</pre></div>
 <h3>If you're connecting over Wi-Fi</h3>
@@ -314,9 +314,9 @@ ping -c 3 gentoo.org</pre></div>
 </div>
 </section>
 <section class="window active section-window" id="stage">
-<div class="title-bar"><div class="title-bar-text">What is Stage 3?</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Grab Stage 3</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>What is Stage 3?</h2>
+<h2>Grab Stage 3</h2>
 <p>Stage 3 is the ready-made base userspace of the system. Choose the right archive based on your choices:</p>
 <ul>
 <li><b>Desktop</b> → archive with the <code>desktop</code> suffix (same for KDE/GNOME/XFCE/LXQt)</li>
@@ -336,9 +336,9 @@ ping -c 3 gentoo.org</pre></div>
 </div>
 </section>
 <section class="window active section-window" id="chroot">
-<div class="title-bar"><div class="title-bar-text">Chroot: entering Gentoo</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Chroot in</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Chroot: entering Gentoo</h2>
+<h2>Chroot in</h2>
 <p>Your root filesystem is <code>/mnt/gentoo</code>. First move the DNS setting and virtual filesystems there, then enter it:</p>
 <div class="cmd"><pre>cp --dereference /etc/resolv.conf /mnt/gentoo/etc/resolv.conf
 mount --types proc /proc /mnt/gentoo/proc
@@ -353,9 +353,9 @@ export PS1="(gentoo) $PS1"</pre></div>
 </div>
 </section>
 <section class="window active section-window" id="portage">
-<div class="title-bar"><div class="title-bar-text">Get to know Portage</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Meet Portage</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Get to know Portage</h2>
+<h2>Meet Portage</h2>
 <p><code>emerge</code> is the tool you'll use most from Portage. It compiles packages from source; you can also use binary packages if you want.</p>
 <div class="two"><div class="card"><b>Install</b><br/><code>emerge --ask package</code></div><div class="card"><b>Search</b><br/><code>emerge --search package</code></div><div class="card"><b>Update</b><br/><code>emerge --ask --update --deep --newuse @world</code></div><div class="card"><b>Preview first</b><br/><code>emerge --ask --pretend package</code></div></div>
 <div class="callout info"><b>Good habit:</b> Before any big change, use <code>--pretend</code> to see what will be installed/removed. Portage shows you the plan, and you check whether it makes sense.</div>
@@ -363,9 +363,9 @@ export PS1="(gentoo) $PS1"</pre></div>
 </div>
 </section>
 <section class="window active section-window" id="profile">
-<div class="title-bar"><div class="title-bar-text">Profile and USE flags</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Pick a profile</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Profile and USE flags</h2>
+<h2>Pick a profile</h2>
 <p>A <b>profile</b> defines the system's overall defaults. A <b>USE flag</b> is a feature choice — for example adding Wayland or Bluetooth support to a package.</p>
 <div class="cmd"><pre>eselect profile list
 emerge --info | grep '^USE'</pre></div>
@@ -392,9 +392,9 @@ nano /etc/portage/make.conf</pre></div>
 </div>
 </section>
 <section class="window active section-window" id="kernel">
-<div class="title-bar"><div class="title-bar-text">Kernel: don't touch it the first time</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Skip the kernel</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Kernel: don't touch it the first time</h2>
+<h2>Skip the kernel</h2>
 <p>Configuring the kernel manually is one of Gentoo's freedoms, but you don't need it for the first install. If you don't want the compiling hassle, use the <b>distribution kernel</b>; <code>sys-kernel/gentoo-kernel-bin</code>, which the Handbook also recommends, provides a ready-made kernel.</p>
 <p>For a distribution kernel you also need an <b>initramfs</b>; otherwise GRUB can't find the root filesystem. For this, configure <code>sys-kernel/installkernel</code> with dracut and turn on the <code>dist-kernel</code> USE flag:</p>
 <div class="cmd"><pre>echo 'sys-kernel/installkernel dracut' &gt; /etc/portage/package.use/installkernel
@@ -405,9 +405,9 @@ emerge --ask sys-kernel/gentoo-kernel-bin</pre></div>
 </div>
 </section>
 <section class="window active section-window" id="system">
-<div class="title-bar"><div class="title-bar-text">Set the system up for ourselves</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Set up the system</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Set the system up for ourselves</h2>
+<h2>Set up the system</h2>
 <h3>Computer's hostname</h3><div class="cmd"><pre>echo gentoo-lab &gt; /etc/hostname</pre></div>
 <h3>Time zone</h3><div class="cmd"><pre>ln -sf /usr/share/zoneinfo/Europe/&lt;REGION&gt;/&lt;CITY&gt; /etc/localtime
 echo Europe/&lt;REGION&gt;/&lt;CITY&gt; &gt; /etc/timezone</pre></div>
@@ -428,9 +428,9 @@ systemctl enable --now NetworkManager</pre></div></div>
 </div>
 </section>
 <section class="window active section-window" id="boot">
-<div class="title-bar"><div class="title-bar-text">GRUB: how will the computer open Gentoo?</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Install a bootloader</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>GRUB: how will the computer open Gentoo?</h2>
+<h2>Install a bootloader</h2>
 <div class="opt firmware gpt">
 <p>Installing GRUB isn't enough; you must make sure the EFI partition is mounted in the right place. For UEFI the Handbook uses the <code>efi-64</code> platform.</p>
 <p>First install the GRUB package (make sure <code>GRUB_PLATFORMS="efi-64"</code> is defined in <code>make.conf</code>):</p>
@@ -454,9 +454,9 @@ GRUB_GFXMODE=auto grub-mkconfig -o /boot/grub/grub.cfg</pre></div>
 </div>
 </section>
 <section class="window active section-window" id="desktop">
-<div class="title-bar"><div class="title-bar-text">Let's set up the desktop</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Set up the desktop</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Let's set up the desktop</h2>
+<h2>Set up the desktop</h2>
 <div class="opt desktop server">
 <p>For a server install we don't set up a graphical desktop or display manager. Internet and basic services are enough. If the network was set up with NetworkManager, you can add a desktop whenever you want in the future.</p>
 <div class="callout info"><b>If you want a desktop after a server:</b> First install the desktop environment packages in this section, then add a display manager. Make your choice and come back here.</div>
@@ -554,9 +554,9 @@ emerge --ask --changed-use --deep @world</pre></div>
 </div>
 </section>
 <section class="window active section-window" id="firstboot">
-<div class="title-bar"><div class="title-bar-text">Ready? Final check</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Check it all</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Ready? Final check</h2>
+<h2>Check it all</h2>
 <div class="checklist">
 <label><input type="checkbox"/> Does the system boot into Gentoo? Is the network working?</label>
 <label><input type="checkbox"/> <code>uname -r</code> runs.</label>
@@ -573,9 +573,9 @@ emerge --ask --changed-use --deep @world</pre></div>
 </div>
 </section>
 <section class="window active section-window" id="sources">
-<div class="title-bar"><div class="title-bar-text">Sources · Look here if stuck</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
+<div class="title-bar"><div class="title-bar-text">Sources</div><div class="title-bar-controls"><button aria-label="Minimize"></button></div></div>
 <div class="window-body has-space">
-<h2>Sources · Look here if stuck</h2>
+<h2>Sources</h2>
 <ul>
 <li><a href="https://wiki.gentoo.org/wiki/Handbook:AMD64" target="_blank">Gentoo AMD64 Handbook</a> · the full install guide and the authoritative reference this guide draws from.</li>
 <li><a href="https://distfiles.gentoo.org/releases/amd64/autobuilds/" target="_blank">Gentoo AMD64 distfiles</a> · the current Live/Stage 3 directories.</li>
