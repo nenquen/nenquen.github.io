@@ -1,3 +1,6 @@
+const DISCORD_INVITE = 'qTjFD8zhyz';
+let discordCache = null;
+
 function showMainWindow() {
     hideAllWindows();
     document.getElementById('mainWindow').classList.remove('hidden');
@@ -14,39 +17,26 @@ function toggleDiscord() {
     loadDiscordServerInfo();
 }
 
+function toggleProfiles() {
+    hideAllWindows();
+    document.getElementById('profilesWindow').classList.remove('hidden');
+}
+
 async function loadDiscordServerInfo() {
-    const inviteCode = 'qTjFD8zhyz';
-    
+    if (discordCache) {
+        applyDiscordServerInfo(discordCache);
+        return;
+    }
+
+    const inviteCode = DISCORD_INVITE;
+
     try {
         const response = await fetch(`https://discord.com/api/v10/invites/${inviteCode}?with_counts=true`);
         const data = await response.json();
         
         if (data.guild) {
-            // Update server name
-            document.getElementById('discordServerName').textContent = data.guild.name;
-            
-            // Update server icon
-            if (data.guild.icon) {
-                const iconUrl = `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.png`;
-                document.getElementById('discordServerIcon').src = iconUrl;
-            }
-            
-            // Update member count
-            if (data.approximate_member_count) {
-                document.getElementById('discordMemberCount').textContent = `${data.approximate_member_count} Members`;
-            }
-            
-            // Update online count
-            if (data.approximate_presence_count) {
-                document.getElementById('discordOnlineCount').textContent = `${data.approximate_presence_count} Online`;
-            }
-            
-            // Update boost count (premium subscription count)
-            if (data.guild.premium_subscription_count !== undefined) {
-                document.getElementById('discordBoostCount').textContent = `${data.guild.premium_subscription_count} Boosts`;
-            } else {
-                document.getElementById('discordBoostCount').textContent = '0 Boosts';
-            }
+            discordCache = data;
+            applyDiscordServerInfo(data);
         }
     } catch (error) {
         console.error('Failed to load Discord server info:', error);
@@ -62,6 +52,7 @@ function hideAllWindows() {
     document.getElementById('mainWindow').classList.add('hidden');
     document.getElementById('aboutWindow').classList.add('hidden');
     document.getElementById('discordWindow').classList.add('hidden');
+    document.getElementById('profilesWindow').classList.add('hidden');
     document.getElementById('warningWindow').classList.add('hidden');
     document.getElementById('overlay').classList.add('hidden');
 }
@@ -94,6 +85,7 @@ function getCurrentWindow() {
     if (!document.getElementById('mainWindow').classList.contains('hidden')) return 'mainWindow';
     if (!document.getElementById('aboutWindow').classList.contains('hidden')) return 'aboutWindow';
     if (!document.getElementById('discordWindow').classList.contains('hidden')) return 'discordWindow';
+    if (!document.getElementById('profilesWindow').classList.contains('hidden')) return 'profilesWindow';
     return 'mainWindow';
 }
 
@@ -116,6 +108,8 @@ function restorePreviousWindow() {
         document.getElementById('aboutWindow').classList.remove('hidden');
     } else if (previousWindow === 'discordWindow') {
         document.getElementById('discordWindow').classList.remove('hidden');
+    } else if (previousWindow === 'profilesWindow') {
+        document.getElementById('profilesWindow').classList.remove('hidden');
     } else {
         document.getElementById('mainWindow').classList.remove('hidden');
     }
@@ -135,13 +129,38 @@ function setRandomWelcomeMessage() {
     document.getElementById('welcome-message').textContent = messages[randomIndex];
 }
 
+function applyDiscordServerInfo(data) {
+    document.getElementById('discordServerName').textContent = data.guild.name;
+
+    if (data.guild.icon) {
+        const iconUrl = `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.png`;
+        document.getElementById('discordServerIcon').src = iconUrl;
+    }
+
+    if (data.approximate_member_count) {
+        document.getElementById('discordMemberCount').textContent = `${data.approximate_member_count} Members`;
+    }
+
+    if (data.approximate_presence_count) {
+        document.getElementById('discordOnlineCount').textContent = `${data.approximate_presence_count} Online`;
+    }
+
+    if (data.guild.premium_subscription_count !== undefined) {
+        document.getElementById('discordBoostCount').textContent = `${data.guild.premium_subscription_count} Boosts`;
+    } else {
+        document.getElementById('discordBoostCount').textContent = '0 Boosts';
+    }
+}
+
 function handleRoute() {
-    const path = window.location.hash || window.location.pathname;
-    
-    if (path.includes('discord') || path === '#discord') {
+    const hash = window.location.hash;
+
+    if (hash === '#discord') {
         toggleDiscord();
-    } else if (path.includes('about') || path === '#about') {
+    } else if (hash === '#about') {
         toggleAbout();
+    } else if (hash === '#profiles') {
+        toggleProfiles();
     } else {
         showMainWindow();
     }
@@ -163,11 +182,19 @@ document.addEventListener('DOMContentLoaded', function() {
         playClickSound();
         window.location.hash = 'about';
     });
+    document.getElementById('profilesButton').addEventListener('click', function() {
+        playClickSound();
+        window.location.hash = 'profiles';
+    });
     document.getElementById('backButton').addEventListener('click', function() {
         playClickSound();
         window.location.hash = '';
     });
     document.getElementById('backDiscordButton').addEventListener('click', function() {
+        playClickSound();
+        window.location.hash = '';
+    });
+    document.getElementById('backProfilesButton').addEventListener('click', function() {
         playClickSound();
         window.location.hash = '';
     });
@@ -192,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.getElementById('joinDiscordButton').addEventListener('click', function() {
         playClickSound();
-        showWarningWindow('https://discord.gg/qTjFD8zhyz');
+        showWarningWindow(`https://discord.gg/${DISCORD_INVITE}`);
     });
     
     // Add event listeners to window control buttons
@@ -204,9 +231,13 @@ document.addEventListener('DOMContentLoaded', function() {
         playClickSound();
         window.location.hash = '';
     });
+    document.getElementById('closeProfilesButton').addEventListener('click', function() {
+        playClickSound();
+        window.location.hash = '';
+    });
     document.getElementById('closeMainButton').addEventListener('click', function() {
         playClickSound();
-        console.log('Main window close clicked');
+        window.location.hash = '';
     });
     document.getElementById('closeWarningButton').addEventListener('click', function() {
         playClickSound();
@@ -222,36 +253,28 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.getElementById('minimizeWarningButton').addEventListener('click', function() {
         playClickSound();
-        console.log('Warning window minimize clicked');
+        cancelWarning();
     });
     document.getElementById('maximizeWarningButton').addEventListener('click', function() {
         playClickSound();
-        console.log('Warning window maximize clicked');
+        document.getElementById('warningWindow').classList.toggle('maximized');
     });
-    
-    // Add event listeners for minimize and maximize buttons (placeholder functionality)
-    document.getElementById('minimizeMainButton').addEventListener('click', function() {
-        playClickSound();
-        console.log('Main window minimize clicked');
-    });
-    document.getElementById('maximizeMainButton').addEventListener('click', function() {
-        playClickSound();
-        console.log('Main window maximize clicked');
-    });
-    document.getElementById('minimizeAboutButton').addEventListener('click', function() {
-        playClickSound();
-        console.log('About window minimize clicked');
-    });
-    document.getElementById('maximizeAboutButton').addEventListener('click', function() {
-        playClickSound();
-        console.log('About window maximize clicked');
-    });
-    document.getElementById('minimizeDiscordButton').addEventListener('click', function() {
-        playClickSound();
-        console.log('Discord window minimize clicked');
-    });
-    document.getElementById('maximizeDiscordButton').addEventListener('click', function() {
-        playClickSound();
-        console.log('Discord window maximize clicked');
+
+    // Minimize / maximize for each window
+    const windows = ['main', 'about', 'discord', 'profiles'];
+    windows.forEach(function(prefix) {
+        const winId = prefix + 'Window';
+        document.getElementById('minimize' + capitalize(prefix) + 'Button').addEventListener('click', function() {
+            playClickSound();
+            showMainWindow();
+        });
+        document.getElementById('maximize' + capitalize(prefix) + 'Button').addEventListener('click', function() {
+            playClickSound();
+            document.getElementById(winId).classList.toggle('maximized');
+        });
     });
 });
+
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}

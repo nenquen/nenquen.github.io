@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nenquen - Personal Website</title>
     <link rel="icon" href="assets/images/favicon.png" type="image/png">
-    <link rel="stylesheet" href="https://unpkg.com/7.css">
+    <link rel="stylesheet" href="https://unpkg.com/7.css@0.21.1/dist/7.css" integrity="sha384-WN2QoZVHe/0w3aOmuNlv18gZn4NKrLXxgsUtsLAXPV1zCE/49AFfl07gQ2knrObx" crossorigin="anonymous">
     <link rel="stylesheet" href="assets/css/style.css">
     <meta property="og:title" content="Nenquen - Personal Website">
     <meta property="og:description" content="Welcome to my personal website!">
@@ -38,6 +38,10 @@
                     <button id="discordButton">
                         <img src="assets/images/discord.png" alt="Discord" width="16" height="16">
                         Discord
+                    </button>
+                    <button id="profilesButton">
+                        <img src="assets/images/people.png" alt="Profiles" width="16" height="16">
+                        Profiles
                     </button>
                 </div>
                 <div class="button-row-right">
@@ -126,6 +130,44 @@
             <div class="button-row-right">
                 <button id="joinDiscordButton">Join Server</button>
                 <button id="backDiscordButton">Back</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="window active main-window hidden" id="profilesWindow">
+        <div class="title-bar">
+            <div class="title-bar-text">My Profiles</div>
+            <div class="title-bar-controls">
+                <button aria-label="Minimize" id="minimizeProfilesButton"></button>
+                <button aria-label="Maximize" id="maximizeProfilesButton"></button>
+                <button aria-label="Close" id="closeProfilesButton"></button>
+            </div>
+        </div>
+        <div class="window-body has-space">
+            <p>Here are my profiles on various Roblox revivals:</p>
+            <fieldset>
+                <legend>Roblox Revivals</legend>
+                <div class="profiles-list">
+                    <div class="profile-row">
+                        <span class="profile-name">RBXLegacy</span>
+                        <a href="https://rbxlegacy.com/users/your_username" class="external-link profile-link">your_username</a>
+                    </div>
+                    <div class="profile-row">
+                        <span class="profile-name">Novaline</span>
+                        <a href="https://novaline.org/users/your_username" class="external-link profile-link">your_username</a>
+                    </div>
+                    <div class="profile-row">
+                        <span class="profile-name">Asteroid</span>
+                        <a href="https://asteroid.pizza/users/your_username" class="external-link profile-link">your_username</a>
+                    </div>
+                    <div class="profile-row">
+                        <span class="profile-name">Macrocosm</span>
+                        <a href="https://macrocosm.studio/users/your_username" class="external-link profile-link">your_username</a>
+                    </div>
+                </div>
+            </fieldset>
+            <div class="button-row-right">
+                <button id="backProfilesButton">Back</button>
             </div>
         </div>
     </div>
