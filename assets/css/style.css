@@ -147,11 +147,17 @@ img {
     align-items: center;
 }
 
-/* --- Windows Security / SmartScreen dialog --- */
+/* --- Windows Security / SmartScreen dialog ---
+   Four stacked bands, like the real SmartScreen window:
+     1. .warning-banner          amber gradient headline
+     2. .warning-text            plain body copy
+     3. .warning-actions         Show details + OK/Cancel
+     4. .warning-footer          help link
+   Bands 2-4 share the Windows dialog grey and are divided by hairlines. */
 .warning-body {
     padding: 0;
     background: #f0f0f0;
-    color: #1a1a1a;
+    color: #000;
 }
 
 /* Keep keyboard focus visible inside the dialog */
@@ -160,16 +166,17 @@ img {
     outline-offset: 2px;
 }
 
+/* 1 - headline band */
 .warning-banner {
     position: relative;
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 16px 18px;
+    padding: 15px 16px 16px;
     background:
-        radial-gradient(120px 80px at 34px 50%, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 70%),
-        linear-gradient(180deg, #e8b53a 0%, #f2c94c 38%, #fbd968 70%, #f6d05c 100%);
-    border-bottom: 1px solid #d9a017;
+        radial-gradient(160px 95px at 36px 50%, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 72%),
+        linear-gradient(180deg, #f8d572 0%, #f9cb4a 40%, #f7c03c 100%);
+    border-bottom: 1px solid #d19a12;
 }
 
 .warning-banner img {
@@ -187,24 +194,25 @@ img {
     color: #000;
 }
 
+/* 2 - body copy */
 .warning-text {
     margin: 0;
-    padding: 16px 18px;
+    padding: 15px 18px 16px;
+    background: #f0f0f0;
     font-size: 12px;
-    line-height: 1.5;
-    color: #1a1a1a;
+    line-height: 1.55;
+    color: #000;
 }
 
-/* Show details uses 7.css's own Collapse component (details/summary);
-   the triangle and its rotation come straight from 7.css.
-   The toggle and its panel are separate grid items so the panel can
-   span the full width underneath the OK/Cancel row. */
+/* 3 - Show details + OK/Cancel */
 .warning-actions {
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
     gap: 10px 12px;
-    padding: 0 18px 14px;
+    padding: 11px 18px 12px;
+    background: #f0f0f0;
+    border-top: 1px solid #dadada;
 }
 
 .warning-details-toggle {
@@ -317,9 +325,11 @@ img {
     font-style: italic;
 }
 
+/* 4 - help link */
 .warning-footer {
-    padding: 10px 18px 14px;
-    border-top: 1px solid #d8d8d8;
+    padding: 11px 18px 13px;
+    background: #f0f0f0;
+    border-top: 1px solid #dadada;
 }
 
 .warning-link {
