@@ -1,280 +1,327 @@
 const DISCORD_INVITE = 'qTjFD8zhyz';
+const WINDOW_IDS = ['mainWindow', 'aboutWindow', 'discordWindow', 'warningWindow'];
+const ROUTE_TO_WINDOW = { '': 'mainWindow', about: 'aboutWindow', discord: 'discordWindow' };
+const DISCORD_CACHE_MS = 60_000;
+const DISCORD_TIMEOUT_MS = 8000;
+
 let discordCache = null;
-
-function showMainWindow() {
-    hideAllWindows();
-    document.getElementById('mainWindow').classList.remove('hidden');
-}
-
-function toggleAbout() {
-    hideAllWindows();
-    document.getElementById('aboutWindow').classList.remove('hidden');
-}
-
-function toggleDiscord() {
-    hideAllWindows();
-    document.getElementById('discordWindow').classList.remove('hidden');
-    loadDiscordServerInfo();
-}
-
-function toggleProfiles() {
-    hideAllWindows();
-    document.getElementById('profilesWindow').classList.remove('hidden');
-}
-
-async function loadDiscordServerInfo() {
-    if (discordCache) {
-        applyDiscordServerInfo(discordCache);
-        return;
-    }
-
-    const inviteCode = DISCORD_INVITE;
-
-    try {
-        const response = await fetch(`https://discord.com/api/v10/invites/${inviteCode}?with_counts=true`);
-        const data = await response.json();
-        
-        if (data.guild) {
-            discordCache = data;
-            applyDiscordServerInfo(data);
-        }
-    } catch (error) {
-        console.error('Failed to load Discord server info:', error);
-        // Fallback values
-        document.getElementById('discordServerName').textContent = 'Nenquen\'s Community';
-        document.getElementById('discordMemberCount').textContent = 'Loading failed';
-        document.getElementById('discordOnlineCount').textContent = 'Loading failed';
-        document.getElementById('discordBoostCount').textContent = 'Loading failed';
-    }
-}
-
-function hideAllWindows() {
-    document.getElementById('mainWindow').classList.add('hidden');
-    document.getElementById('aboutWindow').classList.add('hidden');
-    document.getElementById('discordWindow').classList.add('hidden');
-    document.getElementById('profilesWindow').classList.add('hidden');
-    document.getElementById('warningWindow').classList.add('hidden');
-    document.getElementById('overlay').classList.add('hidden');
-}
-
+let discordCachedAt = 0;
+let discordRequest = null;
 let pendingUrl = null;
 let previousWindow = null;
+let lastFocused = null;
 
-function playClickSound() {
-    const clickSound = new Audio('assets/sounds/click.wav');
-    clickSound.volume = 0.3;
-    clickSound.play().catch(e => console.log('Audio play failed:', e));
+/* ---------- sound (lazy, but warmed up on first user gesture) ---------- */
+
+const sounds = {};
+
+function loadSound(key, src, volume) {
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audio.volume = volume;
+    audio.src = src;
+    sounds[key] = audio;
 }
 
-function playWarningSound() {
-    const warningSound = new Audio('assets/sounds/warning.wav');
-    warningSound.volume = 0.5;
-    warningSound.play().catch(e => console.log('Audio play failed:', e));
+function playSound(key) {
+    const audio = sounds[key];
+    if (!audio) return;
+    try {
+        const clone = audio.cloneNode();
+        clone.volume = audio.volume;
+        const result = clone.play();
+        if (result && typeof result.catch === 'function') result.catch(() => {});
+    } catch {}
 }
 
-function showWarningWindow(url) {
-    pendingUrl = url;
-    previousWindow = getCurrentWindow();
-    playWarningSound();
-    hideAllWindows();
-    document.getElementById('warningWindow').classList.remove('hidden');
-    document.getElementById('overlay').classList.remove('hidden');
+function warmSounds() {
+    try {
+        if (!sounds.click) loadSound('click', 'assets/sounds/click.wav', 0.3);
+        if (!sounds.warning) loadSound('warning', 'assets/sounds/warning.wav', 0.5);
+    } catch {}
 }
 
-function getCurrentWindow() {
-    if (!document.getElementById('mainWindow').classList.contains('hidden')) return 'mainWindow';
-    if (!document.getElementById('aboutWindow').classList.contains('hidden')) return 'aboutWindow';
-    if (!document.getElementById('discordWindow').classList.contains('hidden')) return 'discordWindow';
-    if (!document.getElementById('profilesWindow').classList.contains('hidden')) return 'profilesWindow';
-    return 'mainWindow';
+/* ---------- window switching ---------- */
+
+function isWarningOpen() {
+    const el = document.getElementById('warningWindow');
+    return !!el && !el.classList.contains('hidden');
 }
 
-function openPendingUrl() {
-    if (pendingUrl) {
-        window.open(pendingUrl, '_blank');
-        pendingUrl = null;
+function routeFromHash() {
+    const hash = window.location.hash;
+    if (hash === '#about') return 'about';
+    if (hash === '#discord') return 'discord';
+    return '';
+}
+
+function currentRoute() {
+    if (!document.getElementById('aboutWindow').classList.contains('hidden')) return 'about';
+    if (!document.getElementById('discordWindow').classList.contains('hidden')) return 'discord';
+    return '';
+}
+
+function showWindow(id) {
+    for (const windowId of WINDOW_IDS) {
+        document.getElementById(windowId).classList.add('hidden');
     }
-    restorePreviousWindow();
-}
-
-function cancelWarning() {
-    pendingUrl = null;
-    restorePreviousWindow();
-}
-
-function restorePreviousWindow() {
-    hideAllWindows();
-    if (previousWindow === 'aboutWindow') {
-        document.getElementById('aboutWindow').classList.remove('hidden');
-    } else if (previousWindow === 'discordWindow') {
-        document.getElementById('discordWindow').classList.remove('hidden');
-    } else if (previousWindow === 'profilesWindow') {
-        document.getElementById('profilesWindow').classList.remove('hidden');
-    } else {
-        document.getElementById('mainWindow').classList.remove('hidden');
+    document.getElementById(id).classList.remove('hidden');
+    if (id !== 'warningWindow') {
+        document.getElementById('overlay').classList.add('hidden');
     }
-    previousWindow = null;
 }
 
-function setRandomWelcomeMessage() {
-    const messages = [
-        "Welcome! What's up :p",
-        "Check out our discord server!",
-        "Nenquen was here :3",
-        "Giggity giggity giggity giggity!",
-        "The source code of the site is available on my github!"
-    ];
-    
-    const randomIndex = Math.floor(Math.random() * messages.length);
-    document.getElementById('welcome-message').textContent = messages[randomIndex];
+function showRoute(route) {
+    const id = ROUTE_TO_WINDOW[route] || 'mainWindow';
+    showWindow(id);
+    if (id === 'discordWindow') loadDiscordServerInfo();
 }
+
+/* ---------- discord server info ---------- */
 
 function applyDiscordServerInfo(data) {
     document.getElementById('discordServerName').textContent = data.guild.name;
 
     if (data.guild.icon) {
-        const iconUrl = `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.png`;
-        document.getElementById('discordServerIcon').src = iconUrl;
+        document.getElementById('discordServerIcon').src =
+            `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.png`;
     }
 
-    if (data.approximate_member_count) {
-        document.getElementById('discordMemberCount').textContent = `${data.approximate_member_count} Members`;
-    }
+    document.getElementById('discordMemberCount').textContent =
+        data.approximate_member_count != null ? `${data.approximate_member_count} Members` : 'Unknown members';
+    document.getElementById('discordOnlineCount').textContent =
+        data.approximate_presence_count != null ? `${data.approximate_presence_count} Online` : 'Unknown online';
+    document.getElementById('discordBoostCount').textContent =
+        data.guild.premium_subscription_count != null ? `${data.guild.premium_subscription_count} Boosts` : '0 Boosts';
+}
 
-    if (data.approximate_presence_count) {
-        document.getElementById('discordOnlineCount').textContent = `${data.approximate_presence_count} Online`;
-    }
+function setDiscordError() {
+    document.getElementById('discordServerName').textContent = "Nenquen's Community";
+    document.getElementById('discordMemberCount').textContent = 'Loading failed';
+    document.getElementById('discordOnlineCount').textContent = 'Loading failed';
+    document.getElementById('discordBoostCount').textContent = 'Loading failed';
+}
 
-    if (data.guild.premium_subscription_count !== undefined) {
-        document.getElementById('discordBoostCount').textContent = `${data.guild.premium_subscription_count} Boosts`;
-    } else {
-        document.getElementById('discordBoostCount').textContent = '0 Boosts';
+async function fetchDiscordInvite() {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), DISCORD_TIMEOUT_MS);
+    try {
+        const response = await fetch(
+            `https://discord.com/api/v10/invites/${DISCORD_INVITE}?with_counts=true`,
+            { signal: controller.signal }
+        );
+        if (!response.ok) throw new Error(`Discord API: ${response.status}`);
+        const data = await response.json();
+        if (!data.guild) throw new Error('No guild in invite response');
+        return data;
+    } finally {
+        clearTimeout(timer);
     }
 }
+
+async function loadDiscordServerInfo() {
+    if (discordCache && Date.now() - discordCachedAt < DISCORD_CACHE_MS) {
+        applyDiscordServerInfo(discordCache);
+        return;
+    }
+    if (discordRequest) return; // already in flight
+
+    discordRequest = fetchDiscordInvite()
+        .then((data) => {
+            discordCache = data;
+            discordCachedAt = Date.now();
+            applyDiscordServerInfo(data);
+        })
+        .catch((error) => {
+            console.error('Failed to load Discord server info:', error);
+            setDiscordError();
+        })
+        .finally(() => {
+            discordRequest = null;
+        });
+}
+
+/* ---------- SmartScreen-style warning dialog ---------- */
+
+function fileNameFromUrl(url) {
+    try {
+        const parsed = new URL(url);
+        const segment = parsed.pathname.split('/').filter(Boolean).pop();
+        if (segment) return decodeURIComponent(segment);
+        return parsed.hostname;
+    } catch {
+        return url;
+    }
+}
+
+function setDetailsOpen(open) {
+    document.getElementById('warningDetails').classList.toggle('hidden', !open);
+    const toggle = document.getElementById('toggleDetailsButton');
+    toggle.setAttribute('aria-expanded', String(open));
+    document.getElementById('detailsToggleLabel').textContent =
+        open ? 'Hide details' : 'Show details';
+}
+
+function showWarningWindow(url) {
+    if (!url) return;
+    pendingUrl = url;
+    previousWindow = ROUTE_TO_WINDOW[currentRoute()] || 'mainWindow';
+    lastFocused = document.activeElement;
+
+    document.getElementById('warningFileName').textContent = fileNameFromUrl(url);
+    document.getElementById('warningFullPath').textContent = url;
+    setDetailsOpen(false);
+
+    showWindow('warningWindow');
+    document.getElementById('overlay').classList.remove('hidden');
+    document.getElementById('cancelWarningButton').focus();
+    playSound('warning');
+}
+
+function closeWarning() {
+    const restoreFocus = lastFocused;
+    pendingUrl = null;
+    lastFocused = null;
+    showWindow(previousWindow || 'mainWindow');
+    previousWindow = null;
+    if (restoreFocus && document.contains(restoreFocus)) restoreFocus.focus();
+}
+
+function openPendingUrl() {
+    const url = pendingUrl;
+    const backTo = previousWindow || 'mainWindow';
+    closeWarning();
+    if (url) window.open(url, '_blank', 'noopener');
+    showWindow(backTo);
+}
+
+/* ---------- routing ---------- */
 
 function handleRoute() {
-    const hash = window.location.hash;
+    const route = routeFromHash();
 
-    if (hash === '#discord') {
-        toggleDiscord();
-    } else if (hash === '#about') {
-        toggleAbout();
-    } else if (hash === '#profiles') {
-        toggleProfiles();
-    } else {
-        showMainWindow();
+    // Dialog stays open across hash changes (browser Back/Forward),
+    // but we remember where the user wanted to go.
+    if (isWarningOpen()) {
+        previousWindow = ROUTE_TO_WINDOW[route] || 'mainWindow';
+        return;
     }
+
+    showRoute(route);
 }
 
-// Listen for hash changes
+function setHash(route) {
+    const target = route ? `#${route}` : '';
+    if (window.location.hash === target) return false;
+
+    if (route) {
+        window.location.hash = target;
+        return true;
+    }
+
+    // Clearing the hash with `location.hash = ''` throws an
+    // "Unsafe attempt" error on file://, so use history instead.
+    const clean = window.location.pathname + window.location.search;
+    try {
+        history.pushState(null, '', clean);
+    } catch {
+        try {
+            history.replaceState(null, '', clean);
+        } catch {}
+    }
+    return true;
+}
+
+function go(route) {
+    playSound('click');
+    setHash(route);
+    // Show right away: hashchange can be blocked on file://.
+    showRoute(route);
+}
+
+function setRandomWelcomeMessage() {
+    const messages = [
+        "Welcome! What's up :p",
+        'Check out our discord server!',
+        'Nenquen was here :3',
+        'Giggity giggity giggity giggity!',
+        'The source code of the site is available on my github!'
+    ];
+    document.getElementById('welcome-message').textContent =
+        messages[Math.floor(Math.random() * messages.length)];
+}
+
 window.addEventListener('hashchange', handleRoute);
 
-// Event listeners
-document.addEventListener('DOMContentLoaded', function() {
-    // Check URL hash for routing
+document.addEventListener('DOMContentLoaded', () => {
     handleRoute();
-    
-    // Set random welcome message
     setRandomWelcomeMessage();
-    
-    // Add event listeners to navigation buttons
-    document.getElementById('aboutButton').addEventListener('click', function() {
-        playClickSound();
-        window.location.hash = 'about';
-    });
-    document.getElementById('profilesButton').addEventListener('click', function() {
-        playClickSound();
-        window.location.hash = 'profiles';
-    });
-    document.getElementById('backButton').addEventListener('click', function() {
-        playClickSound();
-        window.location.hash = '';
-    });
-    document.getElementById('backDiscordButton').addEventListener('click', function() {
-        playClickSound();
-        window.location.hash = '';
-    });
-    document.getElementById('backProfilesButton').addEventListener('click', function() {
-        playClickSound();
-        window.location.hash = '';
-    });
-    
-    // Add event listeners to all external links
-    document.querySelectorAll('.external-link').forEach(function(link) {
-        link.addEventListener('click', function(e) {
+    warmSounds();
+
+    // Browsers only allow audio after a user gesture.
+    document.addEventListener('pointerdown', warmSounds, { once: true });
+    document.addEventListener('keydown', warmSounds, { once: true });
+
+    // Title-bar buttons are decorative: swallow any activation attempt.
+    document.querySelectorAll('.title-bar-controls .title-btn-dead').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
             e.preventDefault();
-            playClickSound();
-            showWarningWindow(this.href);
+            e.stopPropagation();
+        }, true);
+    });
+
+    const on = (id, handler) => {
+        document.getElementById(id).addEventListener('click', handler);
+    };
+
+    on('aboutButton', () => go('about'));
+    on('discordButton', () => go('discord'));
+    on('backButton', () => go(''));
+    on('backDiscordButton', () => go(''));
+
+    document.querySelectorAll('.external-link').forEach((link) => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            playSound('click');
+            showWarningWindow(link.href);
         });
     });
-    
-    // Add event listeners to link buttons
-    document.getElementById('githubButton').addEventListener('click', function() {
-        playClickSound();
+
+    on('githubButton', () => {
+        playSound('click');
         showWarningWindow('https://github.com/nenquen');
     });
-    document.getElementById('discordButton').addEventListener('click', function() {
-        playClickSound();
-        window.location.hash = 'discord';
-    });
-    document.getElementById('joinDiscordButton').addEventListener('click', function() {
-        playClickSound();
+    on('joinDiscordButton', () => {
+        playSound('click');
         showWarningWindow(`https://discord.gg/${DISCORD_INVITE}`);
     });
-    
-    // Add event listeners to window control buttons
-    document.getElementById('closeAboutButton').addEventListener('click', function() {
-        playClickSound();
-        window.location.hash = '';
+
+    on('toggleDetailsButton', (e) => {
+        playSound('click');
+        setDetailsOpen(e.currentTarget.getAttribute('aria-expanded') !== 'true');
     });
-    document.getElementById('closeDiscordButton').addEventListener('click', function() {
-        playClickSound();
-        window.location.hash = '';
+    on('cancelWarningButton', () => {
+        playSound('click');
+        closeWarning();
     });
-    document.getElementById('closeProfilesButton').addEventListener('click', function() {
-        playClickSound();
-        window.location.hash = '';
-    });
-    document.getElementById('closeMainButton').addEventListener('click', function() {
-        playClickSound();
-        window.location.hash = '';
-    });
-    document.getElementById('closeWarningButton').addEventListener('click', function() {
-        playClickSound();
-        cancelWarning();
-    });
-    document.getElementById('cancelWarningButton').addEventListener('click', function() {
-        playClickSound();
-        cancelWarning();
-    });
-    document.getElementById('confirmWarningButton').addEventListener('click', function() {
-        playClickSound();
+    on('confirmWarningButton', () => {
+        playSound('click');
         openPendingUrl();
     });
-    document.getElementById('minimizeWarningButton').addEventListener('click', function() {
-        playClickSound();
-        cancelWarning();
-    });
-    document.getElementById('maximizeWarningButton').addEventListener('click', function() {
-        playClickSound();
-        document.getElementById('warningWindow').classList.toggle('maximized');
+
+    on('overlay', () => {
+        if (isWarningOpen()) closeWarning();
     });
 
-    // Minimize / maximize for each window
-    const windows = ['main', 'about', 'discord', 'profiles'];
-    windows.forEach(function(prefix) {
-        const winId = prefix + 'Window';
-        document.getElementById('minimize' + capitalize(prefix) + 'Button').addEventListener('click', function() {
-            playClickSound();
-            showMainWindow();
-        });
-        document.getElementById('maximize' + capitalize(prefix) + 'Button').addEventListener('click', function() {
-            playClickSound();
-            document.getElementById(winId).classList.toggle('maximized');
-        });
+    document.addEventListener('keydown', (e) => {
+        if (!isWarningOpen()) return;
+        // SmartScreen behaviour: Escape / Enter cancel, Enter also works
+        // when focus is not already on a button.
+        if (e.key === 'Escape') {
+            closeWarning();
+        } else if (e.key === 'Enter' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') {
+            e.preventDefault();
+            closeWarning();
+        }
     });
 });
-
-function capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}

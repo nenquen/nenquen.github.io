@@ -1,39 +1,53 @@
-@font-face {
-    font-family: 'SegoeUI';
-    src: url('../fonts/SegoeUI.ttf') format('truetype');
+*, *::before, *::after {
+    box-sizing: border-box;
 }
 
-@font-face {
-    font-family: 'Roboto';
-    src: url('../fonts/Roboto-Regular.ttf') format('truetype');
+.hidden {
+    display: none !important;
+}
+
+html {
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
     margin: 0;
-    padding: 0;
-    background: url('../images/wallpaper.jpg') no-repeat center center fixed;
-    background-size: cover;
-    font-family: 'SegoeUI', 'Roboto', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 16px;
     min-height: 100vh;
+    min-height: 100dvh;
+    background-color: #2e2843;
+    background-image:
+        radial-gradient(1100px 550px at 75% 15%, rgba(169, 155, 201, 0.45), rgba(169, 155, 201, 0) 60%),
+        radial-gradient(900px 500px at 15% 85%, rgba(18, 12, 38, 0.6), rgba(18, 12, 38, 0) 65%),
+        radial-gradient(700px 700px at 50% 50%, rgba(120, 100, 180, 0.22), rgba(120, 100, 180, 0) 70%),
+        linear-gradient(180deg, #241f38 0%, #2e2843 45%, #4a3d6e 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    -webkit-font-smoothing: none;
+    text-rendering: optimizeSpeed;
     display: flex;
     align-items: center;
     justify-content: center;
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
+    overflow-x: hidden;
 }
 
-img {
-    user-drag: none;
-    -webkit-user-drag: none;
-    -moz-user-drag: none;
-    pointer-events: none;
+.page {
+    width: 100%;
+    display: flex;
+    justify-content: center;
 }
 
+/* 7.css: keep window sizing in one place */
 .main-window {
+    position: relative;
+    z-index: 10;
     width: 100%;
     max-width: 500px;
+}
+
+/* Title-bar controls look normal but are dead: no mouse, no keyboard focus action */
+.title-bar-controls .title-btn-dead {
+    pointer-events: none;
 }
 
 .title-bar-text {
@@ -47,40 +61,68 @@ img {
     height: 16px;
 }
 
+/* Only button icons ignore pointer events, links stay clickable */
+.button-row-left button img,
+.title-bar-text img,
+.welcome-message-container img,
+.warning-banner img,
+.discord-info-row img {
+    pointer-events: none;
+}
+
+img {
+    -webkit-user-drag: none;
+}
+
 .button-row-right {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+/* Inside the split row both groups sit on the same baseline */
+.button-row-split .button-row-right,
+.button-row-split .button-row-left {
+    margin-top: 0;
+}
+
+/* All buttons in the main row share the same height */
+.button-row-split button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 23px;
+    box-sizing: border-box;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.button-row-split button img {
+    flex-shrink: 0;
 }
 
 .button-row-left {
     display: flex;
     justify-content: flex-start;
-    gap: 8px;
-}
-
-.button-row-center {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin: 15px 0;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 
 .button-row-split {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
     margin-top: 20px;
+    flex-wrap: wrap;
 }
 
 .button-row-left button {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-}
-
-.button-row-left button img {
-    vertical-align: middle;
 }
 
 .welcome-message-container {
@@ -105,30 +147,152 @@ img {
     align-items: center;
 }
 
-.hidden {
-    display: none;
+/* --- Windows Security / SmartScreen dialog --- */
+.warning-body {
+    padding: 0;
+    background: #f0f0f0;
+    color: #1a1a1a;
 }
 
-.warning-message-container {
+/* Keep keyboard focus visible inside the dialog */
+.warning-body :focus-visible {
+    outline: 1px dotted #000;
+    outline-offset: 2px;
+}
+
+.warning-banner {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 12px;
-    margin-bottom: 20px;
-    padding: 10px 0 10px 10px;
+    padding: 14px 16px;
+    background: linear-gradient(180deg, #ffe08a 0%, #f7c948 100%);
+    border-bottom: 1px solid #e0a800;
 }
 
-.warning-message-container img {
+.warning-banner img {
     flex-shrink: 0;
     width: 32px;
     height: 32px;
 }
 
-.warning-message-container p {
+.warning-banner p {
     margin: 0;
-    line-height: 1.4;
-    min-height: 32px;
+    font-size: 15px;
+    line-height: 1.35;
+    color: #000;
+}
+
+.warning-text {
+    margin: 0;
+    padding: 16px 18px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #1a1a1a;
+}
+
+.warning-actions {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 0 18px 14px;
+}
+
+.warning-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+.details-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 4px 6px;
+    font: inherit;
+    font-size: 12px;
+    color: #1a1a1a;
+    cursor: pointer;
+}
+
+.details-toggle:hover {
+    background: none;
+    color: #0645ad;
+}
+
+.details-toggle:focus-visible {
+    outline: 1px dotted #000;
+    outline-offset: 2px;
+}
+
+.chevron {
+    width: 14px;
+    height: 14px;
+    border: 1px solid #6b6b6b;
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.chevron::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 6px;
+    height: 6px;
+    border-right: 1px solid #1a1a1a;
+    border-bottom: 1px solid #1a1a1a;
+    transform: rotate(45deg);
+    transition: transform 0.15s ease;
+}
+
+.details-toggle[aria-expanded="true"] .chevron::after {
+    transform: rotate(-45deg);
+    top: 5px;
+}
+
+.warning-details {
+    margin: 0 18px 14px;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #c8c8c8;
+    font-size: 11px;
+    line-height: 1.6;
+    color: #1a1a1a;
+    word-break: break-all;
+}
+
+.warning-details-row span:first-child {
+    display: inline-block;
+    min-width: 78px;
+    color: #4a4a4a;
+}
+
+.warning-details-note {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e0e0e0;
+    color: #6b6b6b;
+    font-style: italic;
+}
+
+.warning-footer {
+    padding: 10px 18px 14px;
+    border-top: 1px solid #d8d8d8;
+}
+
+.warning-link {
+    font-size: 12px;
+    color: #0645ad;
+    text-decoration: underline;
+}
+
+.warning-link:hover {
+    color: #0b4fc1;
 }
 
 .discord-server-container {
@@ -154,6 +318,7 @@ img {
 
 .discord-server-info {
     flex: 1;
+    min-width: 0;
 }
 
 .discord-server-info h3 {
@@ -194,7 +359,6 @@ img {
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
     opacity: 0.8;
     transition: opacity 0.2s;
 }
@@ -206,36 +370,6 @@ img {
 .language-icon-link img {
     width: 48px;
     height: 48px;
-    pointer-events: auto;
-}
-
-.profiles-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 4px;
-}
-
-.profile-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    font-size: 13px;
-}
-
-.profile-name {
-    font-weight: 600;
-    color: #000;
-}
-
-.profile-link {
-    color: #0000aa;
-    text-decoration: underline;
-}
-
-.profile-link:hover {
-    color: #0000ff;
 }
 
 .overlay {
@@ -246,29 +380,30 @@ img {
     height: 100%;
     background: rgba(0, 0, 0, 0.4);
     z-index: 5;
-    pointer-events: auto;
 }
 
-.main-window {
-    position: relative;
-    z-index: 10;
-}
+@media (max-width: 520px) {
+    body {
+        padding: 12px;
+        align-items: flex-start;
+    }
 
-.main-window.maximized {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    max-width: none;
-    height: 100%;
-    z-index: 20;
-}
+    .button-row-split {
+        flex-direction: column;
+        align-items: stretch;
+    }
 
-.main-window.maximized .window-body {
-    position: absolute;
-    top: 22px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow-y: auto;
+    .button-row-left,
+    .button-row-right {
+        justify-content: flex-start;
+    }
+
+    .warning-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .warning-buttons {
+        justify-content: flex-end;
+    }
 }
