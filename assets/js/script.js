@@ -159,7 +159,7 @@ function setDetailsOpen(open) {
     const details = document.getElementById('warningDetails');
     details.open = open;
     document.getElementById('warningDetailsPanel').hidden = !open;
-    details.querySelector('summary').textContent =
+    details.querySelector('.disclosure-label').textContent =
         open ? 'Hide details' : 'Show details';
 }
 
