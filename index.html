@@ -7,7 +7,7 @@
     <meta name="description" content="Nenquen's personal website - GoldSrc, web design and more.">
     <link rel="icon" href="assets/images/favicon.png" type="image/png">
     <link rel="stylesheet" href="https://unpkg.com/7.css@0.21.1/dist/7.css" integrity="sha384-WN2QoZVHe/0w3aOmuNlv18gZn4NKrLXxgsUtsLAXPV1zCE/49AFfl07gQ2knrObx" crossorigin="anonymous">
-    <link rel="stylesheet" href="assets/css/style.css?v=7">
+    <link rel="stylesheet" href="assets/css/style.css?v=8">
     <meta property="og:title" content="Nenquen - Personal Website">
     <meta property="og:description" content="GoldSrc, web design and Windows 7 nostalgia. Welcome to nenquen's tiny corner of the web.">
     <meta property="og:image" content="https://nenquen.is-a.dev/assets/images/og-image.jpg">
@@ -149,24 +149,23 @@
                 </div>
                 <p class="warning-text">Your Internet security settings suggest that one or more files may be harmful. Do you want to use it anyway?</p>
                 <div class="warning-actions">
-                    <button id="toggleDetailsButton" type="button" class="details-toggle" aria-expanded="false" aria-controls="warningDetails">
-                        <span class="chevron" aria-hidden="true"></span>
-                        <span id="detailsToggleLabel">Show details</span>
-                    </button>
+                    <details class="warning-details-toggle" id="warningDetails">
+                        <summary>Show details</summary>
+                    </details>
                     <div class="warning-buttons">
                         <button id="confirmWarningButton" type="button">OK</button>
                         <button id="cancelWarningButton" type="button" class="default">Cancel</button>
                     </div>
-                </div>
-                <div class="warning-details hidden" id="warningDetails">
-                    <div class="warning-details-row"><span>File:</span> <span id="warningFileName">-</span></div>
-                    <div class="warning-details-row"><span>Full path:</span> <span id="warningFullPath">-</span></div>
-                    <div class="warning-details-row"><span>Publisher:</span> <span>Unknown Publisher</span></div>
-                    <div class="warning-details-row"><span>From:</span> <span>Internet</span></div>
-                    <div class="warning-details-note">This is an exercise in web design. Nothing is downloaded or blocked.</div>
+                    <div class="warning-details-panel" id="warningDetailsPanel" hidden>
+                        <div class="warning-details-row"><span>File:</span> <span id="warningFileName">-</span></div>
+                        <div class="warning-details-row"><span>Full path:</span> <span id="warningFullPath">-</span></div>
+                        <div class="warning-details-row"><span>Publisher:</span> <span>Unknown Publisher</span></div>
+                        <div class="warning-details-row"><span>From:</span> <span>Internet</span></div>
+                        <div class="warning-details-note">This is an exercise in web design. Nothing is downloaded or blocked.</div>
+                    </div>
                 </div>
                 <div class="warning-footer">
-                    <a href="https://support.microsoft.com/en-us/windows" target="_blank" rel="noopener noreferrer" class="warning-link">How do I decide whether to unblock these files?</a>
+                    <span class="warning-link">How do I decide whether to unblock these files?</span>
                 </div>
             </div>
         </div>
@@ -174,6 +173,6 @@
 
     <div class="overlay hidden" id="overlay"></div>
 
-    <script src="assets/js/script.js?v=7"></script>
+    <script src="assets/js/script.js?v=8"></script>
 </body>
 </html>

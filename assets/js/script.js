@@ -155,10 +155,10 @@ function fileNameFromUrl(url) {
 }
 
 function setDetailsOpen(open) {
-    document.getElementById('warningDetails').classList.toggle('hidden', !open);
-    const toggle = document.getElementById('toggleDetailsButton');
-    toggle.setAttribute('aria-expanded', String(open));
-    document.getElementById('detailsToggleLabel').textContent =
+    const details = document.getElementById('warningDetails');
+    details.open = open;
+    document.getElementById('warningDetailsPanel').hidden = !open;
+    details.querySelector('summary').textContent =
         open ? 'Hide details' : 'Show details';
 }
 
@@ -296,10 +296,12 @@ document.addEventListener('DOMContentLoaded', () => {
         showWarningWindow(`https://discord.gg/${DISCORD_INVITE}`);
     });
 
-    on('toggleDetailsButton', (e) => {
-        playSound('click');
-        setDetailsOpen(e.currentTarget.getAttribute('aria-expanded') !== 'true');
-    });
+    // Native <details> drives the toggle; we mirror it onto the panel and
+    // keep the label in sync.
+    const details = document.getElementById('warningDetails');
+    details.querySelector('summary').addEventListener('click', () => playSound('click'));
+    details.addEventListener('toggle', () => setDetailsOpen(details.open));
+
     on('cancelWarningButton', () => {
         playSound('click');
         closeWarning();

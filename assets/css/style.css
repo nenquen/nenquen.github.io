@@ -161,18 +161,23 @@ img {
 }
 
 .warning-banner {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    background: linear-gradient(180deg, #ffe08a 0%, #f7c948 100%);
-    border-bottom: 1px solid #e0a800;
+    gap: 14px;
+    padding: 16px 18px;
+    background:
+        radial-gradient(120px 80px at 34px 50%, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 70%),
+        linear-gradient(180deg, #e8b53a 0%, #f2c94c 38%, #fbd968 70%, #f6d05c 100%);
+    border-bottom: 1px solid #d9a017;
 }
 
 .warning-banner img {
     flex-shrink: 0;
     width: 32px;
     height: 32px;
+    /* thin dark rim so the icon does not bleed into the yellow */
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.85)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
 }
 
 .warning-banner p {
@@ -190,73 +195,49 @@ img {
     color: #1a1a1a;
 }
 
+/* Show details uses 7.css's own Collapse component (details/summary);
+   the triangle and its rotation come straight from 7.css.
+   The toggle and its panel are separate grid items so the panel can
+   span the full width underneath the OK/Cancel row. */
 .warning-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 10px 12px;
     padding: 0 18px 14px;
 }
 
-.warning-buttons {
-    display: flex;
-    gap: 6px;
+.warning-details-toggle {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0;
 }
 
-.details-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: none;
-    border: none;
-    box-shadow: none;
-    padding: 4px 6px;
-    font: inherit;
-    font-size: 12px;
+.warning-details-toggle > summary {
+    display: inline;
     color: #1a1a1a;
-    cursor: pointer;
+    font-size: 12px;
 }
 
-.details-toggle:hover {
-    background: none;
+.warning-details-toggle > summary:hover {
     color: #0645ad;
 }
 
-.details-toggle:focus-visible {
+.warning-details-toggle > summary:focus-visible {
     outline: 1px dotted #000;
     outline-offset: 2px;
 }
 
-.chevron {
-    width: 14px;
-    height: 14px;
-    border: 1px solid #6b6b6b;
-    border-radius: 50%;
-    position: relative;
-    flex-shrink: 0;
+.warning-buttons {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    gap: 6px;
 }
 
-.chevron::after {
-    content: '';
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 6px;
-    height: 6px;
-    border-right: 1px solid #1a1a1a;
-    border-bottom: 1px solid #1a1a1a;
-    transform: rotate(45deg);
-    transition: transform 0.15s ease;
-}
-
-.details-toggle[aria-expanded="true"] .chevron::after {
-    transform: rotate(-45deg);
-    top: 5px;
-}
-
-.warning-details {
-    margin: 0 18px 14px;
+.warning-details-panel {
+    grid-column: 1 / -1;
+    grid-row: 2;
     padding: 10px 12px;
     background: #fff;
     border: 1px solid #c8c8c8;
@@ -264,6 +245,10 @@ img {
     line-height: 1.6;
     color: #1a1a1a;
     word-break: break-all;
+}
+
+.warning-details-panel[hidden] {
+    display: none;
 }
 
 .warning-details-row span:first-child {
@@ -399,11 +384,22 @@ img {
     }
 
     .warning-actions {
-        flex-direction: column;
-        align-items: stretch;
+        grid-template-columns: 1fr;
+    }
+
+    .warning-details-toggle {
+        grid-column: 1;
+        grid-row: 1;
     }
 
     .warning-buttons {
+        grid-column: 1;
+        grid-row: 2;
         justify-content: flex-end;
+    }
+
+    .warning-details-panel {
+        grid-column: 1;
+        grid-row: 3;
     }
 }
