@@ -297,7 +297,21 @@ img {
     grid-column: 2;
     grid-row: 1;
     display: flex;
+    align-items: center;
     gap: 6px;
+}
+
+/* 7.css forces min-width:75px and display:block on every button, which
+   leaves these two far wider than their labels and their text off-centre.
+   SmartScreen sizes them to the label and centres it. */
+.warning-buttons button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 23px;
+    padding: 0 14px;
+    line-height: 1;
 }
 
 .warning-details-panel {
