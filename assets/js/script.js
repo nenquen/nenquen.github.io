@@ -10,6 +10,7 @@ let discordRequest = null;
 let pendingUrl = null;
 let previousWindow = null;
 let lastFocused = null;
+let restoreFocusAfterClose = false;
 
 /* ---------- sound (lazy, but warmed up on first user gesture) ---------- */
 
@@ -166,7 +167,14 @@ function showWarningWindow(url) {
     if (!url) return;
     pendingUrl = url;
     previousWindow = ROUTE_TO_WINDOW[currentRoute()] || 'mainWindow';
-    lastFocused = document.activeElement;
+
+    // Only take the focus back if the user arrived here by keyboard.
+    // Restoring it after a mouse click leaves the trigger looking
+    // permanently lit.
+    const trigger = document.activeElement;
+    restoreFocusAfterClose =
+        !!trigger && trigger !== document.body && trigger.matches(':focus-visible');
+    lastFocused = restoreFocusAfterClose ? trigger : null;
 
     document.getElementById('warningFileName').textContent = fileNameFromUrl(url);
     document.getElementById('warningFullPath').textContent = url;
@@ -182,9 +190,18 @@ function closeWarning() {
     const restoreFocus = lastFocused;
     pendingUrl = null;
     lastFocused = null;
+    restoreFocusAfterClose = false;
+
     showWindow(previousWindow || 'mainWindow');
     previousWindow = null;
-    if (restoreFocus && document.contains(restoreFocus)) restoreFocus.focus();
+
+    if (restoreFocus && document.contains(restoreFocus)) {
+        restoreFocus.focus();
+    } else if (document.activeElement && document.activeElement !== document.body) {
+        // Mouse flow: the hidden trigger must not keep focus, otherwise
+        // it renders as if it were still hovered/active.
+        document.activeElement.blur();
+    }
 }
 
 function openPendingUrl() {
