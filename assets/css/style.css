@@ -147,13 +147,18 @@ img {
     align-items: center;
 }
 
+/* The SmartScreen window is narrower than the other windows. */
+.warning-window {
+    max-width: 440px;
+}
+
 /* --- Windows Security / SmartScreen dialog ---
    Four stacked bands, like the real SmartScreen window:
      1. .warning-banner          amber gradient headline
-     2. .warning-text            plain body copy
+     2. .warning-text            plain body copy   (whiter)
      3. .warning-actions         Show details + OK/Cancel
      4. .warning-footer          help link
-   Bands 2-4 share the Windows dialog grey and are divided by hairlines. */
+   Band 2 stays white, bands 3-4 drop to a soft grey. */
 .warning-body {
     padding: 0;
     background: #f0f0f0;
@@ -198,7 +203,7 @@ img {
 .warning-text {
     margin: 0;
     padding: 15px 18px 16px;
-    background: #f0f0f0;
+    background: #ffffff;
     font-size: 12px;
     line-height: 1.55;
     color: #000;
@@ -211,8 +216,8 @@ img {
     align-items: center;
     gap: 10px 12px;
     padding: 11px 18px 12px;
-    background: #f0f0f0;
-    border-top: 1px solid #dadada;
+    background: #ebebeb;
+    border-top: 1px solid #d6d6d6;
 }
 
 .warning-details-toggle {
@@ -328,8 +333,8 @@ img {
 /* 4 - help link */
 .warning-footer {
     padding: 11px 18px 13px;
-    background: #f0f0f0;
-    border-top: 1px solid #dadada;
+    background: #ebebeb;
+    border-top: 1px solid #d6d6d6;
 }
 
 .warning-link {
