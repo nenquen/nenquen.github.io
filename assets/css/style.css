@@ -262,6 +262,9 @@ img {
     box-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 
+/* The chevron is drawn from the right+bottom borders of a square, so its
+   visual mass does not sit on the box centre: a down arrow reads as too
+   low and an up arrow as too high. Nudge each state towards the middle. */
 .disclosure-circle::after {
     content: '';
     position: absolute;
@@ -271,12 +274,12 @@ img {
     height: 5px;
     border-right: 1.5px solid #1f1f1f;
     border-bottom: 1.5px solid #1f1f1f;
-    transform: translate(-50%, -50%) rotate(45deg);
+    transform: translate(-50%, calc(-50% - 1.2px)) rotate(45deg);
     transition: transform 0.15s ease;
 }
 
 .warning-details-toggle[open] .disclosure-circle::after {
-    transform: translate(-50%, -50%) rotate(-135deg);
+    transform: translate(-50%, calc(-50% + 1.2px)) rotate(-135deg);
 }
 
 /* Windows keeps the disclosure label black; only the ring darkens. */
