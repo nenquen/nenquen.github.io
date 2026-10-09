@@ -1,11 +1,14 @@
-# nenquen.is-a.dev
+# nenquen.github.io
 
 My personal website. A Windows 7 desktop in the browser, built with
 [7.css](https://khang-nd.github.io/7.css/) and plain HTML/CSS/JS.
 
 ## Live site
 
-<https://nenquen.is-a.dev>
+<https://nenquen.github.io>
+
+No custom domain is configured: the repo has no `CNAME`, so GitHub Pages
+serves it at the `github.io` address.
 
 ## Features
 
@@ -34,7 +37,6 @@ Then open <http://localhost:8000>.
 ```
 index.html          single page, all four windows
 404.html            themed 404
-CNAME               custom domain for GitHub Pages
 assets/css/style.css
 assets/js/script.js
 assets/images/
