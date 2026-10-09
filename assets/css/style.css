@@ -499,36 +499,30 @@ img {
     flex-wrap: wrap;
 }
 
-/* 7.css ListBox: a sunken panel holding the items. */
-.languages-grid[role='list'] {
-    background: #fff;
-    border: 1px solid #adb9bf;
-    box-shadow: inset 0 0 0 1px #fff, inset -1px -1px 0 0 #d6e1e5;
-    padding: 3px;
+/* Plain centred icon row, no panel behind it. */
+.languages-grid {
+    display: flex;
+    gap: 15px;
+    padding: 12px 0 2px;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
-.language-link {
+.language-icon-link {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 5px 10px 5px 6px;
-    color: #000;
-    text-decoration: none;
+    justify-content: center;
+    opacity: 0.85;
+    transition: opacity 0.2s;
 }
 
-.language-link:hover {
-    background: linear-gradient(#fff9, #e6ecf5cc 90%, #fffc);
-    text-decoration: none;
+.language-icon-link:hover {
+    opacity: 1;
 }
 
-.language-link img {
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-}
-
-.language-label {
-    font-size: 12px;
+.language-icon-link img {
+    width: 48px;
+    height: 48px;
 }
 
 .overlay {
