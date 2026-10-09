@@ -4,58 +4,73 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>404 - Nen's Stuff</title>
-    <meta name="description" content="This page does not exist.">
     <meta name="robots" content="noindex">
-    <meta name="theme-color" content="#2e2843">
+    <meta name="theme-color" content="#0414a7">
     <link rel="icon" href="/assets/images/favicon.png" type="image/png">
-    <link rel="stylesheet" href="https://unpkg.com/7.css@0.21.1/dist/7.css" integrity="sha384-WN2QoZVHe/0w3aOmuNlv18gZn4NKrLXxgsUtsLAXPV1zCE/49AFfl07gQ2knrObx" crossorigin="anonymous">
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link href='https://fonts.googleapis.com/css?family=VT323' rel='stylesheet'>
     <style>
-        /* 404 overrides: keep the site's Gentoo theme, override the body layout */
+        * { box-sizing: border-box; }
+
+        html { height: 100%; }
+
+        body, h1, h2, h3, h4, p, a { color: #e0e2f4; }
+        body, p { font: normal 20px/1.25rem 'VT323', monospace; margin: 0; }
+        h1 { font: normal 2.75rem/1.05em 'VT323', monospace; margin: 0; }
         body {
-            align-items: center;
+            background: #0414a7;
+            padding: 20px;
+            min-height: 100vh;
+            min-height: 100dvh;
         }
-        .error-window {
-            max-width: 420px;
+
+        .container {
+            width: 90%;
+            margin: auto;
+            max-width: 640px;
+        }
+
+        .bsod {
+            padding-top: 10%;
+        }
+
+        .bsod .neg {
+            text-align: center;
+            color: #0414a7;
+        }
+
+        .bsod .neg .bg {
+            background: #aaaaaa;
+            padding: 0 15px 2px 13px;
+        }
+
+        .bsod .title { margin-bottom: 50px; }
+
+        .bsod .nav {
+            margin-top: 35px;
             text-align: center;
         }
-        .error-code {
-            margin: 0 0 10px;
-            font-size: 42px;
-            font-weight: 700;
-            color: #3e355a;
+
+        .bsod .nav .link {
+            text-decoration: none;
+            padding: 0 9px 2px 8px;
         }
-        .error-window p {
-            margin: 0 0 18px;
-            color: #222;
-        }
-        .error-actions {
-            display: flex;
-            justify-content: center;
-            gap: 6px;
+
+        .bsod .nav .link:hover,
+        .bsod .nav .link:focus {
+            background: #aaaaaa;
+            color: #0414a7;
         }
     </style>
 </head>
 <body>
-    <main class="page">
-        <div class="window glass active main-window error-window" style="--w7-w-bg: #54487A;">
-            <div class="title-bar">
-                <div class="title-bar-text">Windows Explorer</div>
-                <div class="title-bar-controls">
-                    <button type="button" aria-label="Minimize" aria-disabled="true" tabindex="-1"></button>
-                    <button type="button" aria-label="Maximize" aria-disabled="true" tabindex="-1"></button>
-                    <button type="button" aria-label="Close" aria-disabled="true" tabindex="-1"></button>
-                </div>
-            </div>
-            <div class="window-body has-space">
-                <h1 class="error-code">404</h1>
-                <p>The location you typed could not be found on this site.</p>
-                <div class="error-actions">
-                    <a href="/" role="button" class="default">Go to homepage</a>
-                    <button type="button" onclick="history.back()">Go back</button>
-                </div>
-            </div>
-        </div>
+    <main class="bsod container">
+        <h1 class="neg title"><span class="bg">Error - 404</span></h1>
+        <p>An error has occurred, to continue:</p>
+        <p>* Return to our <a href="/" class="link">homepage</a>.<br>
+        * Then try again later.</p>
+        <nav class="nav">
+            <a href="/" class="link">index</a>
+        </nav>
     </main>
 </body>
 </html>
