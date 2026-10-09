@@ -423,63 +423,17 @@ img {
 }
 
 /* --- About Me window ---
-   7.css calls this a GroupBox: a fieldset with an engraved border and a
-   legend. Using one per topic turns the wall of paragraphs into labelled
-   regions, the way a real Windows dialog groups content. */
+   The topic fieldsets use the GroupBox pattern 7.css documents. */
 .about-body {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     /* The About window holds the most content, so on short viewports the
        body scrolls inside the frame instead of pushing the whole page.
        24px body padding + ~28px title bar + ~8px frame all come off the
        viewport before the content box gets a height. */
     max-height: calc(100dvh - 60px);
     overflow-y: auto;
-}
-
-.about-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.about-header img {
-    flex-shrink: 0;
-    width: 48px;
-    height: 48px;
-}
-
-.about-header-text {
-    min-width: 0;
-}
-
-.about-hello {
-    margin: 0 0 3px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #000;
-}
-
-.about-meta {
-    margin: 0;
-    font-size: 12px;
-    color: #444;
-}
-
-.about-group {
-    margin: 0;
-}
-
-.about-group > p {
-    margin: 0;
-    font-size: 12px;
-    line-height: 1.55;
-    color: #000;
-}
-
-.about-note {
-    color: #333;
 }
 
 .languages-grid {
@@ -492,9 +446,8 @@ img {
 
 .language-icon-link {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
     opacity: 0.85;
     transition: opacity 0.2s;
 }
@@ -506,11 +459,6 @@ img {
 .language-icon-link img {
     width: 48px;
     height: 48px;
-}
-
-.language-name {
-    font-size: 11px;
-    color: #000;
 }
 
 .overlay {
