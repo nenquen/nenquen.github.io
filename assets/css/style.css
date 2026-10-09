@@ -72,6 +72,17 @@ body {
     max-width: 500px;
 }
 
+/* 7.css paints .title-bar-controls as its own translucent white panel
+   (#fff3) with a left border and a -1px shadow, which on a glass frame
+   reads as a hard rectangular patch sitting on the Aero sheen. Real Win7
+   caption buttons sit straight on the glass, so drop the panel and let the
+   individual button borders do the separating. */
+.title-bar-controls {
+    background: transparent;
+    border-left: 0;
+    box-shadow: none;
+}
+
 /* Title-bar controls look normal but are dead: no mouse, no keyboard focus action */
 .title-bar-controls .title-btn-dead {
     pointer-events: none;
