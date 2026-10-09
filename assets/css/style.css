@@ -589,17 +589,13 @@ img {
         align-items: center;
     }
 
-    /* On narrow screens the split stacks, but the row gap from the desktop
-       rule was compounding with the column gap and pushing the right-hand
-       group too far down. Zero it here so the two groups sit together. */
-/* Narrow screens keep all three buttons on one baseline. The desktop
-       space-between would push About Me to the far edge with a big empty
-       gap, so switch to a left-aligned row that can still wrap if the
-       buttons truly do not fit. */
-.button-row-split {
+    /* Match the desktop row: About Me stays hard right against
+       GitHub/Discord on the left. The three buttons fit down to ~320px,
+       and flex-wrap is kept as a safety net for very narrow screens. */
+    .button-row-split {
         flex-direction: row;
         align-items: center;
-        justify-content: flex-start;
+        justify-content: space-between;
         row-gap: 8px;
         column-gap: 6px;
         flex-wrap: wrap;
@@ -610,8 +606,10 @@ img {
         margin-top: 0;
     }
 
+    /* Keep Show details level with OK/Cancel on one line, exactly like
+       the desktop. Only the details panel drops below when expanded. */
     .warning-actions {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr auto;
     }
 
     .warning-details-toggle {
@@ -620,14 +618,14 @@ img {
     }
 
     .warning-buttons {
-        grid-column: 1;
-        grid-row: 2;
+        grid-column: 2;
+        grid-row: 1;
         justify-content: flex-end;
     }
 
     .warning-details-panel {
-        grid-column: 1;
-        grid-row: 3;
+        grid-column: 1 / -1;
+        grid-row: 2;
     }
 
     /* Keep the type at desktop metrics. Phones ship larger default text
