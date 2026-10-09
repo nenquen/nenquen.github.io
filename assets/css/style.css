@@ -280,6 +280,10 @@ img {
     grid-column: 1;
     grid-row: 1;
     margin: 0;
+    /* match the 23px button height so the row reads as one line */
+    display: flex;
+    align-items: center;
+    height: 23px;
 }
 
 /* Show details disclosure.
@@ -357,6 +361,7 @@ img {
     grid-row: 1;
     display: flex;
     align-items: center;
+    height: 23px;
     gap: 6px;
 }
 
@@ -540,15 +545,6 @@ img {
     margin: 0;
 }
 
-.languages-grid {
-    list-style: none;
-    display: flex;
-    gap: 8px;
-    margin: 10px 0 0;
-    padding: 0;
-    flex-wrap: wrap;
-}
-
 /* Plain centred icon row, no panel behind it. */
 .languages-grid {
     display: flex;
@@ -593,14 +589,25 @@ img {
         align-items: center;
     }
 
-    .button-row-split {
-        flex-direction: column;
-        align-items: stretch;
+    /* On narrow screens the split stacks, but the row gap from the desktop
+       rule was compounding with the column gap and pushing the right-hand
+       group too far down. Zero it here so the two groups sit together. */
+/* Narrow screens keep all three buttons on one baseline. The desktop
+       space-between would push About Me to the far edge with a big empty
+       gap, so switch to a left-aligned row that can still wrap if the
+       buttons truly do not fit. */
+.button-row-split {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        row-gap: 8px;
+        column-gap: 6px;
+        flex-wrap: wrap;
     }
 
-    .button-row-left,
-    .button-row-right {
-        justify-content: flex-start;
+    .button-row-split .button-row-left,
+    .button-row-split .button-row-right {
+        margin-top: 0;
     }
 
     .warning-actions {
