@@ -1,3 +1,5 @@
-# Segoe UI / Tahoma are Microsoft-licensed. They stay on this machine for
-# local rendering and never reach the public Pages deploy.
-assets/fonts/
+# Segoe UI and Tahoma are Microsoft-licensed and carry no web redistribution
+# rights. They stay on this machine for local rendering and never reach the
+# public Pages deploy. Everything else in assets/fonts/ (the OFL-licensed
+# Noto Sans subset) is tracked normally.
+assets/fonts/*.ttf

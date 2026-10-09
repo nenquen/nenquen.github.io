@@ -1,0 +1,49 @@
+/* LOCAL ONLY - not linked from index.html, so it never loads on Pages.
+
+   These faces point at assets/fonts/*.ttf, which is gitignored. Linking this
+   file from a local copy of index.html restores the genuine Microsoft Segoe UI
+   instead of the Noto Sans stand-in. The @font-face rules live here rather
+   than in style.css because shipping them would put four dead URLs in the
+   console on every public page load.
+
+   Local:
+     <link rel="stylesheet" href="assets/css/local-fonts.css">
+     <style>:root { --w7-font: 9pt "Segoe UI Local", var(--w7-font); }</style>
+
+   Weights below are the four the page actually renders: 400, 600
+   (.discord-name), 700 (7.css buttons and legend) and 400 italic
+   (.warning-details-note). Not contiguous, so only the faces in use get
+   fetched. */
+
+/* --- Segoe UI Local --- */
+@font-face {
+    font-family: "Segoe UI Local";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("../fonts/segoeui.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "Segoe UI Local";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("../fonts/seguisb.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "Segoe UI Local";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("../fonts/segoeuib.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "Segoe UI Local";
+    font-style: italic;
+    font-weight: 400;
+    font-display: swap;
+    src: url("../fonts/segoeuii.ttf") format("truetype");
+}

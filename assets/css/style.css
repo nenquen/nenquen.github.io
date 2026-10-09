@@ -2,49 +2,26 @@
     box-sizing: border-box;
 }
 
-/* Local Segoe UI, served from disk.
-   assets/fonts/ is gitignored — see .gitignore. These faces resolve during
-   local development and on any machine that has the folder. The public deploy
-   has no assets/fonts/, so the stack below falls through to Noto Sans there.
+/* --- Noto Sans, self-hosted ---
+   Segoe UI is Microsoft-licensed and has no web redistribution rights, so it
+   cannot ship on Pages. Noto Sans is the stand-in: the same humanist skeleton
+   7.css already names in --w7-font, so the metrics land close enough that
+   nothing reflows when the real face isn't available.
 
-   Only the four faces the page actually renders: 400, 600 (.discord-name),
-   700 (7.css buttons, legend) and 400 italic (.warning-details-note).
-   Declarations are not consecutive, so the browser only fetches what is used. */
-
-/* --- Segoe UI Local --- */
+   Committed here rather than pulled from a CDN. Three reasons: no third-party
+   request on a personal site, no runtime dependency on Google Fonts staying
+   up, and the page renders correctly offline. Variable font, latin subset,
+   covers weights 100-900 from one 164 KB file. */
 @font-face {
-    font-family: "Segoe UI Local";
+    font-family: "Noto Sans";
     font-style: normal;
-    font-weight: 400;
+    font-weight: 100 900;
     font-display: swap;
-    src: url("../fonts/segoeui.ttf") format("truetype");
+    src: url("../fonts/noto-sans-latin.woff2") format("woff2");
 }
 
-@font-face {
-    font-family: "Segoe UI Local";
-    font-style: normal;
-    font-weight: 600;
-    font-display: swap;
-    src: url("../fonts/seguisb.ttf") format("truetype");
-}
-
-@font-face {
-    font-family: "Segoe UI Local";
-    font-style: normal;
-    font-weight: 700;
-    font-display: swap;
-    src: url("../fonts/segoeuib.ttf") format("truetype");
-}
-
-@font-face {
-    font-family: "Segoe UI Local";
-    font-style: italic;
-    font-weight: 400;
-    font-display: swap;
-    src: url("../fonts/segoeuii.ttf") format("truetype");
-}
-
-/* Matches 7.css's own chain, with the local faces ahead of the system ones.
+/* 'Segoe UI Local' is only bound by assets/css/local-fonts.css, which is not
+   linked from index.html. Unresolved on a public load, so the chain skips it.
    9pt is the Windows 7 UI default and the size 7.css renders everything at. */
 :root {
     --w7-font: 9pt "Segoe UI Local", "Segoe UI", "SegoeUI", "Noto Sans", Tahoma, Verdana, sans-serif;
