@@ -152,6 +152,12 @@ img {
     max-width: 440px;
 }
 
+/* The landing window carries little content, so it is trimmed to the
+   same width as the dialog instead of stretching to 500px. */
+.welcome-window {
+    max-width: 440px;
+}
+
 /* --- Windows Security / SmartScreen dialog ---
    Four stacked bands, like the real SmartScreen window:
      1. .warning-banner          amber gradient headline
