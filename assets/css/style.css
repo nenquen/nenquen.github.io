@@ -24,7 +24,9 @@ body {
         linear-gradient(180deg, #241f38 0%, #2e2843 45%, #4a3d6e 100%);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeSpeed;
+    text-size-adjust: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -536,9 +538,11 @@ img {
 }
 
 @media (max-width: 520px) {
+    /* Stay vertically centred like the desktop; flex-start was pushing the
+       window to the top of the phone screen. */
     body {
         padding: 12px;
-        align-items: flex-start;
+        align-items: center;
     }
 
     .button-row-split {
@@ -569,5 +573,24 @@ img {
     .warning-details-panel {
         grid-column: 1;
         grid-row: 3;
+    }
+
+    /* Keep the type at desktop metrics. Phones ship larger default text
+       sizes, which makes the window look like a modern, high-DPI app
+       rather than the chunky 7.css look. */
+    body {
+        font-size: 12px;
+        -webkit-text-size-adjust: none;
+        text-size-adjust: none;
+    }
+
+    body p,
+    .discord-stats,
+    .discord-name,
+    .warning-text,
+    .warning-banner p,
+    .warning-footer .warning-link,
+    .warning-details-toggle > summary {
+        font-size: 12px;
     }
 }
