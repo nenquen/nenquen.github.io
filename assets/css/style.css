@@ -66,7 +66,7 @@ body {
 .title-bar-text img,
 .welcome-message-container img,
 .warning-banner img,
-.discord-info-row img {
+.discord-stat-label img {
     pointer-events: none;
 }
 
@@ -370,56 +370,88 @@ img {
     color: #0b4fc1;
 }
 
-.discord-server-container {
+/* --- Discord window ---
+   A ListBox-style sunken card: the avatar sits in a bordered slot on the
+   left, the name and a definition list of stats on the right. */
+.discord-card {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    padding: 15px;
+    gap: 14px;
+    padding: 14px 16px;
     background: #f0f0f0;
     border: 1px solid #c0c0c0;
     border-radius: 3px;
+    box-shadow: inset 0 1px 0 #fff;
 }
 
-.discord-server-icon {
+.discord-avatar {
     flex-shrink: 0;
-}
-
-.discord-server-icon img {
     width: 48px;
     height: 48px;
-    border-radius: 4px;
+    /* the original Fruity/Aero Discord icon, kept as-is */
+    border-radius: 6px;
+    object-fit: contain;
+    box-sizing: border-box;
 }
 
-.discord-server-info {
+.discord-info {
     flex: 1;
     min-width: 0;
 }
 
-.discord-server-info h3 {
-    margin: 0 0 8px 0;
-    font-size: 14px;
+.discord-name {
+    margin: 0 0 8px;
+    font-size: 15px;
     font-weight: 600;
     color: #000;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .discord-stats {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
+    margin: 0;
 }
 
-.discord-info-row {
+.discord-stat {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 12px;
-    color: #333;
+    color: #000;
 }
 
-.discord-info-row img {
+.discord-stat-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #444;
+    min-width: 78px;
+}
+
+.discord-stat-label img {
     width: 16px;
     height: 16px;
+    flex-shrink: 0;
+}
+
+.discord-stat dd {
+    margin: 0;
+    color: #000;
+    font-variant-numeric: tabular-nums;
+}
+
+.discord-error {
+    margin: 12px 0 0;
+    padding: 8px 10px;
+    background: #fff8e6;
+    border: 1px solid #e0c069;
+    color: #6b4b00;
+    font-size: 11px;
+    line-height: 1.5;
 }
 
 /* --- About Me window ---

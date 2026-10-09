@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+  <circle cx="6" cy="5" r="2.6" fill="currentColor"/>
+  <path fill="currentColor" d="M.8 13.6c0-2.6 2-4.4 5.2-4.4s5.2 1.8 5.2 4.4v.6a.9.9 0 0 1-.9.9H1.7a.9.9 0 0 1-.9-.9v-.6Z"/>
+  <path fill="currentColor" opacity=".5" d="M12.6 4.6a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4Zm2.8 4.3c.4 0 .6.3.6.8v3.5c0 .5-.2.8-.6.8-.5 0-.9-.5-1.1-1.4-.2-1-.6-1.8-1.4-2.4l.5-.5c1 .3 1.8 1.1 2 2.2Z"/>
+</svg>

@@ -75,32 +75,56 @@ function showWindow(id) {
 function showRoute(route) {
     const id = ROUTE_TO_WINDOW[route] || 'mainWindow';
     showWindow(id);
-    if (id === 'discordWindow') loadDiscordServerInfo();
+    // Reset the panel so a previous offline notice never lingers.
+    if (id === 'discordWindow') {
+        document.getElementById('discordError').classList.add('hidden');
+        loadDiscordServerInfo();
+    }
 }
 
 /* ---------- discord server info ---------- */
 
-function applyDiscordServerInfo(data) {
-    document.getElementById('discordServerName').textContent = data.guild.name;
-
-    if (data.guild.icon) {
-        document.getElementById('discordServerIcon').src =
-            `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.png`;
-    }
-
-    document.getElementById('discordMemberCount').textContent =
-        data.approximate_member_count != null ? `${data.approximate_member_count} Members` : 'Unknown members';
-    document.getElementById('discordOnlineCount').textContent =
-        data.approximate_presence_count != null ? `${data.approximate_presence_count} Online` : 'Unknown online';
-    document.getElementById('discordBoostCount').textContent =
-        data.guild.premium_subscription_count != null ? `${data.guild.premium_subscription_count} Boosts` : '0 Boosts';
+/* The stats are a definition list, so only the values need updating. */
+function setStat(id, value) {
+    document.getElementById(id).textContent = value;
 }
 
-function setDiscordError() {
-    document.getElementById('discordServerName').textContent = "Nenquen's Community";
-    document.getElementById('discordMemberCount').textContent = 'Loading failed';
-    document.getElementById('discordOnlineCount').textContent = 'Loading failed';
-    document.getElementById('discordBoostCount').textContent = 'Loading failed';
+function applyDiscordServerInfo(data) {
+    const name = document.getElementById('discordServerName');
+    name.textContent = data.guild.name;
+    name.title = data.guild.name;
+
+    if (data.guild.icon) {
+        const avatar = document.getElementById('discordServerIcon');
+        avatar.src = `https://cdn.discordapp.com/icons/${data.guild.id}/${data.guild.icon}.png?size=128`;
+        avatar.alt = `${data.guild.name} server icon`;
+    }
+
+    setStat('discordMemberCount',
+        data.approximate_member_count != null ? String(data.approximate_member_count) : '\u2013');
+    setStat('discordOnlineCount',
+        data.approximate_presence_count != null ? String(data.approximate_presence_count) : '\u2013');
+    setStat('discordBoostCount',
+        data.guild.premium_subscription_count != null ? String(data.guild.premium_subscription_count) : '0');
+
+    document.getElementById('discordError').classList.add('hidden');
+}
+
+/* Offline is a network condition, not a dead server, so say so instead of
+   stamping "failed" over every row. */
+function setDiscordError(reason) {
+    const name = document.getElementById('discordServerName');
+    if (name.textContent === 'Loading\u2026') name.textContent = 'Discord server';
+
+    setStat('discordMemberCount', '\u2013');
+    setStat('discordOnlineCount', '\u2013');
+    setStat('discordBoostCount', '\u2013');
+
+    const error = document.getElementById('discordError');
+    error.textContent = reason
+        ? `Could not reach the Discord API (${reason}). Live member counts are unavailable right now.`
+        : 'Could not reach the Discord API. Live member counts are unavailable right now.';
+    error.classList.remove('hidden');
 }
 
 async function fetchDiscordInvite() {
@@ -135,7 +159,8 @@ async function loadDiscordServerInfo() {
         })
         .catch((error) => {
             console.error('Failed to load Discord server info:', error);
-            setDiscordError();
+            const reason = error && error.name === 'AbortError' ? 'timed out' : 'request failed';
+            setDiscordError(reason);
         })
         .finally(() => {
             discordRequest = null;
