@@ -436,9 +436,20 @@ img {
     overflow-y: auto;
 }
 
-/* Stack the GroupBoxes tightly, the way grouped fields sit in a dialog. */
+/* 7.css leaves fieldsets with margin-bottom:9px, which is what opens the
+   8px seam between the stacked GroupBoxes. Zero both margins and pull the
+   boxes together by their own 1px border so the rules read as one stack. */
+.about-body > fieldset {
+    margin: 0;
+}
+
 .about-body > fieldset + fieldset {
     margin-top: -1px;
+}
+
+/* Keep the Back button off the last GroupBox. */
+.about-body > .button-row-right {
+    margin-top: 12px;
 }
 
 /* 7.css gives paragraphs generous margins; inside a GroupBox the box
