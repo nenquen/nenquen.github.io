@@ -2,6 +2,54 @@
     box-sizing: border-box;
 }
 
+/* Local Segoe UI, served from disk.
+   assets/fonts/ is gitignored — see .gitignore. These faces resolve during
+   local development and on any machine that has the folder. The public deploy
+   has no assets/fonts/, so the stack below falls through to Noto Sans there.
+
+   Only the four faces the page actually renders: 400, 600 (.discord-name),
+   700 (7.css buttons, legend) and 400 italic (.warning-details-note).
+   Declarations are not consecutive, so the browser only fetches what is used. */
+
+/* --- Segoe UI Local --- */
+@font-face {
+    font-family: "Segoe UI Local";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("../fonts/segoeui.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "Segoe UI Local";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("../fonts/seguisb.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "Segoe UI Local";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("../fonts/segoeuib.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "Segoe UI Local";
+    font-style: italic;
+    font-weight: 400;
+    font-display: swap;
+    src: url("../fonts/segoeuii.ttf") format("truetype");
+}
+
+/* Matches 7.css's own chain, with the local faces ahead of the system ones.
+   9pt is the Windows 7 UI default and the size 7.css renders everything at. */
+:root {
+    --w7-font: 9pt "Segoe UI Local", "Segoe UI", "SegoeUI", "Noto Sans", Tahoma, Verdana, sans-serif;
+}
+
 .hidden {
     display: none !important;
 }
@@ -22,7 +70,7 @@ body {
         radial-gradient(900px 500px at 15% 85%, rgba(18, 12, 38, 0.6), rgba(18, 12, 38, 0) 65%),
         radial-gradient(700px 700px at 50% 50%, rgba(120, 100, 180, 0.22), rgba(120, 100, 180, 0) 70%),
         linear-gradient(180deg, #241f38 0%, #2e2843 45%, #4a3d6e 100%);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--w7-font);
     -webkit-font-smoothing: none;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeSpeed;
