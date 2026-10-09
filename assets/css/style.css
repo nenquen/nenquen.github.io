@@ -427,7 +427,7 @@ img {
 .about-body {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 0;
     /* The About window holds the most content, so on short viewports the
        body scrolls inside the frame instead of pushing the whole page.
        24px body padding + ~28px title bar + ~8px frame all come off the
@@ -436,29 +436,56 @@ img {
     overflow-y: auto;
 }
 
+/* Stack the GroupBoxes tightly, the way grouped fields sit in a dialog. */
+.about-body > fieldset + fieldset {
+    margin-top: -1px;
+}
+
+/* 7.css gives paragraphs generous margins; inside a GroupBox the box
+   itself already provides the spacing. */
+.about-body fieldset > p {
+    margin: 0;
+}
+
 .languages-grid {
+    list-style: none;
     display: flex;
-    gap: 15px;
-    padding: 12px 0 2px;
-    justify-content: center;
+    gap: 8px;
+    margin: 10px 0 0;
+    padding: 0;
     flex-wrap: wrap;
 }
 
-.language-icon-link {
+/* 7.css ListBox: a sunken panel holding the items. */
+.languages-grid[role='list'] {
+    background: #fff;
+    border: 1px solid #adb9bf;
+    box-shadow: inset 0 0 0 1px #fff, inset -1px -1px 0 0 #d6e1e5;
+    padding: 3px;
+}
+
+.language-link {
     display: flex;
     align-items: center;
-    justify-content: center;
-    opacity: 0.85;
-    transition: opacity 0.2s;
+    gap: 8px;
+    padding: 5px 10px 5px 6px;
+    color: #000;
+    text-decoration: none;
 }
 
-.language-icon-link:hover {
-    opacity: 1;
+.language-link:hover {
+    background: linear-gradient(#fff9, #e6ecf5cc 90%, #fffc);
+    text-decoration: none;
 }
 
-.language-icon-link img {
-    width: 48px;
-    height: 48px;
+.language-link img {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+}
+
+.language-label {
+    font-size: 12px;
 }
 
 .overlay {
