@@ -1,5 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-  <circle cx="6" cy="5" r="2.6" fill="currentColor"/>
-  <path fill="currentColor" d="M.8 13.6c0-2.6 2-4.4 5.2-4.4s5.2 1.8 5.2 4.4v.6a.9.9 0 0 1-.9.9H1.7a.9.9 0 0 1-.9-.9v-.6Z"/>
-  <path fill="currentColor" opacity=".5" d="M12.6 4.6a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4Zm2.8 4.3c.4 0 .6.3.6.8v3.5c0 .5-.2.8-.6.8-.5 0-.9-.5-1.1-1.4-.2-1-.6-1.8-1.4-2.4l.5-.5c1 .3 1.8 1.1 2 2.2Z"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#bfe6ff"/>
+      <stop offset=".45" stop-color="#3d9be9"/>
+      <stop offset="1" stop-color="#0d4c9e"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".85"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="8" cy="8" r="7" fill="url(#g)" stroke="#0a3a78" stroke-width=".7"/>
+  <circle cx="8" cy="8" r="6.3" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width=".6"/>
+  <ellipse cx="5.6" cy="4.6" rx="3.1" ry="2.1" fill="url(#gloss)" transform="rotate(-24 5.6 4.6)"/>
+  <path fill="#fff" fill-opacity=".92" d="M8 6.2a1.55 1.55 0 1 1 0 3.1 1.55 1.55 0 0 1 0-3.1Zm-2.75 4a.42.42 0 0 0-.3.4v.75c0 .22.18.4.4.4h5.3a.4.4 0 0 0 .4-.4v-.75a.42.42 0 0 0-.3-.4 3.9 3.9 0 0 0-2.1-.6h-.7a3.9 3.9 0 0 0-2.7.6Z"/>
 </svg>
