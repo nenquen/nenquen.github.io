@@ -140,35 +140,37 @@ ul { list-style: none; }
 .section p { color: var(--subtle); max-width: 620px; }
 .section-lead { margin-bottom: 1.5rem; }
 
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1.75rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.9rem; margin-top: 1.5rem; }
 .card {
+  display: flex;
+  flex-direction: column;
   background: var(--base);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 1.25rem;
+  padding: 1rem;
 }
 .section-alt .card { background: var(--surface); border-color: var(--highlight-high); }
 .card-icon {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
   border-radius: 6px;
   background: var(--highlight-low);
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.7rem;
 }
-.card-icon svg { width: 18px; height: 18px; }
+.card-icon svg { width: 16px; height: 16px; }
 .card-icon text { fill: currentColor; stroke: none; font-family: inherit; font-weight: 700; }
 .icon-html { color: var(--rose); }
 .icon-css { color: var(--foam); }
 .icon-js { color: var(--gold); }
 .icon-js text { font-size: 9px; }
-.icon-git { color: var(--iris); }
 .icon-hlsdk { color: var(--rose); }
+.icon-amxx { color: var(--iris); }
 .icon-servers { color: var(--gold); }
 
-.card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
-.card p { font-size: 0.9rem; }
+.card h3 { font-size: 1rem; font-weight: 600; line-height: 1.35; margin-bottom: 0.3rem; }
+.card p { font-size: 0.88rem; line-height: 1.45; margin-top: auto; }
 
 .dots {
   position: fixed;
@@ -201,7 +203,10 @@ ul { list-style: none; }
   border-radius: 50%;
   background: var(--rose);
   pointer-events: none;
-  transition: transform 0.08s linear;
+  will-change: transform;
+}
+.dots.ready .dot-indicator {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (max-width: 640px) {
@@ -237,11 +242,11 @@ ul { list-style: none; }
   .hero h1 { font-size: clamp(2.1rem, 11vw, 3rem); }
   .section { padding-block: 3rem; }
   .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
-  .card { padding: 0.9rem; }
-  .card-icon { width: 28px; height: 28px; margin-bottom: 0.6rem; }
-  .card-icon svg { width: 15px; height: 15px; }
-  .card h3 { font-size: 0.9rem; margin-bottom: 0.25rem; }
-  .card p { font-size: 0.8rem; }
+  .card { padding: 0.85rem; }
+  .card-icon { width: 26px; height: 26px; margin-bottom: 0.55rem; }
+  .card-icon svg { width: 14px; height: 14px; }
+  .card h3 { font-size: 0.9rem; margin-bottom: 0.2rem; }
+  .card p { font-size: 0.78rem; }
   .dots { display: none; }
 }
 

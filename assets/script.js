@@ -1,6 +1,5 @@
 const navToggle = document.getElementById("navToggle");
 const navMenu = document.getElementById("navMenu");
-const sections = document.querySelectorAll("section[id]");
 const navLinks = document.querySelectorAll(".nav-menu a");
 const heroTitle = document.getElementById("hero-title");
 const navTitle = document.getElementById("navTitle");
@@ -8,112 +7,184 @@ const pages = document.querySelectorAll(".hero, .section");
 const dotButtons = document.querySelectorAll(".dots button");
 const dotIndicator = document.getElementById("dotIndicator");
 
+const NAV_HEIGHT = 65;
+const pageOffsets = [];
+let heroTitleBottom = 0;
+let dotStep = 0;
+let maxScroll = 0;
+
+function measure() {
+  const y = window.scrollY;
+  pageOffsets.length = 0;
+  pages.forEach((page) => {
+    pageOffsets.push(page.getBoundingClientRect().top + y - NAV_HEIGHT);
+  });
+  heroTitleBottom = heroTitle.getBoundingClientRect().bottom + y;
+  dotStep = dotButtons.length > 1 ? dotButtons[1].offsetTop - dotButtons[0].offsetTop : 0;
+  maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  if (dotIndex >= 0) setDot(dotIndex, true);
+}
+
+function refresh() {
+  measure();
+  render();
+}
+
+let navTitleVisible = null;
+
+function updateNavTitle() {
+  const visible = heroTitleBottom - window.scrollY <= NAV_HEIGHT;
+  if (visible === navTitleVisible) return;
+  navTitleVisible = visible;
+  navTitle.classList.toggle("visible", visible);
+}
+
+function currentPageIndex() {
+  const y = window.scrollY + 25;
+  let index = 0;
+  for (let i = 0; i < pageOffsets.length; i++) {
+    if (pageOffsets[i] <= y) index = i;
+  }
+  return index;
+}
+
+let activeLinkId = null;
+
+function updateActiveLink() {
+  const index = window.scrollY >= maxScroll - 2 ? pageOffsets.length - 1 : currentPageIndex();
+  const id = pages[index] ? pages[index].id : "";
+  if (id === activeLinkId) return;
+  activeLinkId = id;
+  navLinks.forEach((link) => {
+    link.classList.toggle("active", link.getAttribute("href") === `#${id}`);
+  });
+}
+
+let dotIndex = -1;
+
+function setDot(index, force) {
+  if (!force && index === dotIndex) return;
+  dotIndex = index;
+  dotIndicator.style.transform = `translate3d(0, ${(index * dotStep).toFixed(2)}px, 0)`;
+}
+
+function updateDots() {
+  const y = window.scrollY;
+  let index = 0;
+  while (index < pageOffsets.length - 1 && y >= pageOffsets[index + 1]) index++;
+  setDot(index);
+}
+
+let renderQueued = false;
+let animating = false;
+let activeIndex = 0;
+let activeProgress = 0;
+let goalIndex = 0;
+let goalProgress = 0;
+
+function positionOf(y) {
+  let index = 0;
+  while (index < pageOffsets.length - 1 && y >= pageOffsets[index + 1]) index++;
+  const start = pageOffsets[index];
+  const end = index < pageOffsets.length - 1 ? pageOffsets[index + 1] : Math.max(start, maxScroll);
+  return { index, progress: end > start ? Math.min(Math.max((y - start) / (end - start), 0), 1) : 0 };
+}
+
+function trackPosition() {
+  const position = positionOf(window.scrollY);
+  activeIndex = position.index;
+  activeProgress = position.progress;
+}
+
+function rememberGoal(target) {
+  const position = positionOf(target);
+  goalIndex = position.index;
+  goalProgress = position.progress;
+}
+
+function render() {
+  renderQueued = false;
+  trackPosition();
+  updateNavTitle();
+  updateActiveLink();
+  if (!animating) updateDots();
+}
+
+function scheduleRender() {
+  if (renderQueued) return;
+  renderQueued = true;
+  requestAnimationFrame(render);
+}
+
+let animationFrame = 0;
+let animationToken = 0;
+
+function animateScrollTo(target) {
+  const start = window.scrollY;
+  const distance = target - start;
+  const token = ++animationToken;
+  rememberGoal(target);
+
+  if (animationFrame) {
+    cancelAnimationFrame(animationFrame);
+    animationFrame = 0;
+  }
+  if (Math.abs(distance) < 1) {
+    animating = false;
+    window.scrollTo(0, target);
+    render();
+    return;
+  }
+
+  animating = true;
+  const duration = 450;
+  const startTime = performance.now();
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+  const step = (now) => {
+    if (token !== animationToken) return;
+    const t = Math.min((now - startTime) / duration, 1);
+    window.scrollTo(0, start + distance * ease(t));
+    render();
+    if (t < 1) {
+      animationFrame = requestAnimationFrame(step);
+    } else {
+      animationFrame = 0;
+      animating = false;
+      render();
+    }
+  };
+
+  animationFrame = requestAnimationFrame(step);
+}
+
+function goToPage(index) {
+  if (index < 0 || index >= pageOffsets.length) return;
+  setDot(index);
+  animateScrollTo(Math.max(0, pageOffsets[index]));
+}
+
 navToggle.addEventListener("click", () => {
   const open = navMenu.classList.toggle("open");
   navToggle.classList.toggle("active", open);
   navToggle.setAttribute("aria-expanded", open);
 });
 
-function updateActiveLink() {
-  let current = null;
-  sections.forEach((section) => {
-    if (section.getBoundingClientRect().top <= 90) current = section.id;
-  });
-  if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
-    current = sections[sections.length - 1].id;
-  }
-  navLinks.forEach((link) => {
-    link.classList.toggle("active", link.getAttribute("href") === `#${current}`);
-  });
-}
+document.addEventListener("click", (event) => {
+  const link = event.target.closest('a[href^="#"]');
+  if (!link) return;
+  const hash = link.getAttribute("href");
+  if (hash.length < 2) return;
 
-function updateNavTitle() {
-  navTitle.classList.toggle("visible", heroTitle.getBoundingClientRect().bottom <= 65);
-}
+  const target = hash === "#top" ? pages[0] : document.querySelector(hash);
+  const index = [...pages].indexOf(target);
+  if (index === -1) return;
 
-function updateDots() {
-  const step = dotButtons.length > 1 ? dotButtons[1].offsetTop - dotButtons[0].offsetTop : 0;
-  const tops = [...pages].map((page) => page.getBoundingClientRect().top + window.scrollY - 65);
-  const y = window.scrollY;
-
-  let index = 0;
-  while (index < tops.length - 1 && y >= tops[index + 1]) index++;
-
-  const start = tops[index];
-  const end = index < tops.length - 1 ? tops[index + 1] : start;
-  const progress = end > start ? Math.min(Math.max((y - start) / (end - start), 0), 1) : 0;
-
-  dotIndicator.style.transform = `translateY(${(index + progress) * step}px)`;
-}
-
-function onScroll() {
-  updateNavTitle();
-  updateActiveLink();
-  updateDots();
-}
-
-let animationToken = 0;
-let animationTimer = null;
-
-function animateScrollTo(target) {
-  const start = window.scrollY;
-  const distance = target - start;
-  if (Math.abs(distance) < 1) return;
-
-  if (animationTimer) clearInterval(animationTimer);
-  const token = ++animationToken;
-  const duration = 450;
-  const startTime = performance.now();
-  const ease = (t) => 1 - Math.pow(1 - t, 3);
-
-  animationTimer = setInterval(() => {
-    if (token !== animationToken) return;
-    const t = Math.min((performance.now() - startTime) / duration, 1);
-    window.scrollTo(0, start + distance * ease(t));
-    updateDots();
-    if (t >= 1) {
-      clearInterval(animationTimer);
-      animationTimer = null;
-    }
-  }, 16);
-}
-
-function goToPage(index) {
-  const page = pages[index];
-  if (!page) return;
-  const top = page.getBoundingClientRect().top + window.scrollY - 65;
-  animateScrollTo(Math.max(0, top));
-  onScroll();
-}
-
-function currentPageIndex() {
-  let index = 0;
-  pages.forEach((page, i) => {
-    if (page.getBoundingClientRect().top <= 90) index = i;
-  });
-  return index;
-}
-
-navMenu.querySelectorAll("a").forEach((link) => {
-  link.addEventListener("click", (event) => {
-    navMenu.classList.remove("open");
-    navToggle.classList.remove("active");
-    navToggle.setAttribute("aria-expanded", "false");
-    const hash = link.getAttribute("href");
-    if (hash.startsWith("#") && hash !== "#top") {
-      const target = document.querySelector(hash);
-      const index = [...pages].indexOf(target);
-      if (index !== -1) {
-        event.preventDefault();
-        goToPage(index);
-      }
-    }
-  });
-});
-
-navTitle.addEventListener("click", (event) => {
   event.preventDefault();
-  goToPage(0);
+  navMenu.classList.remove("open");
+  navToggle.classList.remove("active");
+  navToggle.setAttribute("aria-expanded", "false");
+  goToPage(index);
 });
 
 let wheelLock = false;
@@ -123,12 +194,31 @@ window.addEventListener("wheel", (event) => {
   event.preventDefault();
   if (wheelLock || Math.abs(event.deltaY) < 4) return;
 
-  const next = currentPageIndex() + (event.deltaY > 0 ? 1 : -1);
+  const index = currentPageIndex();
+  const pageTop = pageOffsets[index];
+  const viewHeight = window.innerHeight - NAV_HEIGHT;
+  const pageEnd = index < pageOffsets.length - 1 ? pageOffsets[index + 1] : maxScroll + viewHeight;
+  const pageBottom = Math.min(pageEnd - viewHeight, maxScroll);
+
+  if (event.deltaY > 0 && window.scrollY < pageBottom - 8) {
+    wheelLock = true;
+    animateScrollTo(pageBottom);
+    setTimeout(() => { wheelLock = false; }, 700);
+    return;
+  }
+  if (event.deltaY < 0 && window.scrollY > pageTop + 8) {
+    wheelLock = true;
+    animateScrollTo(pageTop);
+    setTimeout(() => { wheelLock = false; }, 700);
+    return;
+  }
+
+  const next = index + (event.deltaY > 0 ? 1 : -1);
   if (next < 0 || next >= pages.length) return;
 
   wheelLock = true;
   goToPage(next);
-  setTimeout(() => { wheelLock = false; }, 800);
+  setTimeout(() => { wheelLock = false; }, 700);
 }, { passive: false });
 
 let touchStartY = null;
@@ -139,20 +229,26 @@ window.addEventListener("touchstart", (event) => {
   if (event.touches.length !== 1) return;
   touchStartY = event.touches[0].clientY;
   const page = pages[currentPageIndex()];
-  touchMode = page.getBoundingClientRect().height > window.innerHeight - 65 + 2 ? "native" : "jump";
+  touchMode = page.getBoundingClientRect().height > window.innerHeight - NAV_HEIGHT + 2 ? "native" : "jump";
 }, { passive: true });
 
 window.addEventListener("touchmove", (event) => {
   if (touchStartY === null || touchMode !== "jump") return;
   if (!event.cancelable) return;
-  if (Math.abs(event.touches[0].clientY - touchStartY) > 8) event.preventDefault();
+  event.preventDefault();
 }, { passive: false });
 
 window.addEventListener("touchend", (event) => {
   if (touchStartY === null) return;
   const delta = event.changedTouches[0].clientY - touchStartY;
   touchStartY = null;
-  if (touchMode !== "jump" || touchLock || Math.abs(delta) < 40) return;
+
+  if (touchMode !== "jump" || touchLock) return;
+
+  if (Math.abs(delta) < 40) {
+    handleResize();
+    return;
+  }
 
   const next = currentPageIndex() + (delta < 0 ? 1 : -1);
   if (next < 0 || next >= pages.length) return;
@@ -162,15 +258,72 @@ window.addEventListener("touchend", (event) => {
   setTimeout(() => { touchLock = false; }, 550);
 }, { passive: true });
 
+window.addEventListener("touchcancel", () => {
+  if (touchStartY === null) return;
+  touchStartY = null;
+  if (touchMode === "jump" && !touchLock) handleResize();
+}, { passive: true });
+
 dotButtons.forEach((button) => {
   button.addEventListener("click", () => goToPage(Number(button.dataset.page)));
 });
 
 document.addEventListener("copy", (event) => event.preventDefault());
 
-window.addEventListener("scroll", onScroll, { passive: true });
-window.addEventListener("resize", onScroll);
-onScroll();
+let resizeQueued = false;
+let resizing = false;
+
+window.addEventListener("scroll", () => {
+  if (animating || resizing) return;
+  scheduleRender();
+}, { passive: true });
+
+function handleResize() {
+  if (resizeQueued) return;
+  resizeQueued = true;
+  resizing = true;
+
+  requestAnimationFrame(() => {
+    resizeQueued = false;
+
+    if (touchStartY !== null) {
+      measure();
+      resizing = false;
+      return;
+    }
+
+    const index = animating ? goalIndex : activeIndex;
+    const progress = animating ? goalProgress : activeProgress;
+
+    if (animating) {
+      animationToken++;
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+      animationFrame = 0;
+      animating = false;
+    }
+
+    measure();
+
+    const start = pageOffsets[index];
+    const end = index < pageOffsets.length - 1 ? pageOffsets[index + 1] : Math.max(start, maxScroll);
+    const target = Math.max(0, Math.min(start + progress * (end - start), maxScroll));
+    window.scrollTo(0, target);
+    resizing = false;
+    render();
+  });
+}
+
+window.addEventListener("resize", handleResize);
+window.addEventListener("load", refresh);
+
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(refresh);
+}
+
+refresh();
+
+const dotsElement = document.getElementById("dots");
+setTimeout(() => dotsElement.classList.add("ready"), 0);
 
 const titleText = "welcome to peace";
 const width = titleText.length;
