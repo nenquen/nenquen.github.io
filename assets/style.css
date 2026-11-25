@@ -138,9 +138,11 @@ ul { list-style: none; }
 .section-alt { background: var(--overlay); }
 .section h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; }
 .section p { color: var(--subtle); max-width: 620px; }
-.section-lead { margin-bottom: 1.5rem; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.9rem; margin-top: 1.5rem; }
+.project-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.project-grid .card { padding: 1.25rem; }
+.project-grid .card p { margin-top: 0.15rem; }
 .card {
   display: flex;
   flex-direction: column;
@@ -171,6 +173,7 @@ ul { list-style: none; }
 
 .card h3 { font-size: 1rem; font-weight: 600; line-height: 1.35; margin-bottom: 0.3rem; }
 .card p { font-size: 0.88rem; line-height: 1.45; margin-top: auto; }
+.card-avatar { display: block; width: 44px; height: 44px; margin-bottom: 0.9rem; }
 
 .dots {
   position: fixed;
@@ -242,11 +245,14 @@ ul { list-style: none; }
   .hero h1 { font-size: clamp(2.1rem, 11vw, 3rem); }
   .section { padding-block: 3rem; }
   .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+  .project-grid { grid-template-columns: 1fr; }
+  .project-grid .card { padding: 1rem; }
   .card { padding: 0.85rem; }
   .card-icon { width: 26px; height: 26px; margin-bottom: 0.55rem; }
   .card-icon svg { width: 14px; height: 14px; }
   .card h3 { font-size: 0.9rem; margin-bottom: 0.2rem; }
   .card p { font-size: 0.78rem; }
+  .card-avatar { width: 34px; height: 34px; margin-bottom: 0.55rem; }
   .dots { display: none; }
 }
 
